@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solicitação de materiais críticos - Atlas Schindler</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- Scripts do Firebase v9 (Compatibilidade) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--mu:#5d6672;--bd:#d9dde3;--ac:#d6001c;--ok:#157347;--er:#b42318;--erbg:#fdecea}
+@media (prefers-color-scheme:dark){:root{--bg:#14171b;--card:#1d2127;--tx:#eceff3;--mu:#9aa4b0;--bd:#343b44;--ac:#ff4d63;--ok:#4cc38a;--er:#ff8a80;--erbg:#3a1c1a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:#1b1f24;padding:12px 32px;display:flex;align-items:center;gap:24px;border-bottom:3px solid #d6001c;flex-wrap:wrap}
+.brand-logo{display:flex;align-items:center;height:42px}
+.brand-logo img{height:100%;width:auto;display:block}
+header h1{font-size:18px;margin:0;flex:1;color:#fff;border-left:1px solid #4a525c;padding-left:20px}
+nav{display:flex;gap:6px}nav button{background:none;border:1px solid #4a525c;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{background:#d6001c;border-color:#d6001c}
+main{max-width:1180px;margin:28px auto;padding:0 32px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:24px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px}.full{grid-column:1/-1}
+label{display:block;font-weight:600;margin-bottom:4px}label small{font-weight:400;color:var(--mu)}
+input,textarea{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+input:focus,textarea:focus{outline:2px solid var(--ac)}
+.btn{background:var(--ac);color:#fff;border:0;padding:11px 22px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
+.btn.sec{background:none;color:var(--tx);border:1px solid var(--bd)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.err{background:var(--erbg);color:var(--er);padding:8px 12px;border-radius:8px;margin-top:6px;font-weight:600}
+.okm{color:var(--ok);font-weight:600;margin-top:10px}.mu{color:var(--mu);font-size:13px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mu);font-weight:600}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.row input{max-width:340px}
+h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margin:60px auto;text-align:center}
+</style></head><body>
+<header>
+<div class="brand-logo">
+  <img src="Logo_Atlas_branca.png" alt="Atlas Schindler">
+</div>
+<h1>Solicitação de materiais críticos</h1>
+<nav><button id="t-form" class="on">Solicitar</button><button id="t-painel">Painel</button><button id="t-admin">Administrador</button></nav></header>
+<main>
+<div id="status" class="mu" style="margin-bottom:12px">Conectando ao banco de dados...</div>
+
+<section id="v-form"><div class="card"><h2>Nova solicitação</h2>
+<div class="grid">
+<div><label>Nome</label><input id="f-nome"></div>
+<div><label>Nome de usuário</label><input id="f-user"></div>
+<div><label>Linha</label><input id="f-linha"></div>
+<div><label>Posição da linha</label><input id="f-pos"></div>
+<div><label>SKU</label><input id="f-sku" autocomplete="off" maxlength="40"><div id="sku-msg"></div></div>
+<div><label>Quantidade</label><input id="f-qtd" type="number" min="1" step="1"></div>
+<div><label>Nº do circuito regulador <small>(opcional)</small></label><input id="f-circ"></div>
+<div><label>Data e hora</label><input id="f-dt" disabled></div>
+<div class="full"><label>Observação</label><textarea id="f-obs" rows="3"></textarea></div>
+</div>
+<div style="margin-top:20px"><button class="btn" id="enviar" disabled>Enviar solicitação</button><div id="f-res"></div></div>
+</div></section>
+
+<section id="v-painel" class="hide">
+<div class="card lock" id="lk-painel"><h2>Painel restrito</h2><input type="password" id="pw-painel" placeholder="Senha" autocomplete="off"><div style="margin-top:12px"><button class="btn" id="go-painel">Entrar</button></div><div id="er-painel"></div></div>
+<div class="card hide" id="in-painel"><h2>Solicitações registradas</h2>
+<div class="row"><input id="filtro" placeholder="Filtrar (SKU, linha, operador...)"><button class="btn sec" id="copiar">Copiar tabela</button><button class="btn" id="xl">Baixar Excel</button><span class="mu" id="cnt"></span></div>
+<div class="tw"><table id="tab"></table></div></div></section>
+
+<section id="v-admin" class="hide">
+<div class="card lock" id="lk-admin"><h2>Área do administrador</h2><input type="password" id="pw-admin" placeholder="Senha" autocomplete="off"><div style="margin-top:12px"><button class="btn" id="go-admin">Entrar</button></div><div id="er-admin"></div></div>
+<div id="in-admin" class="hide">
+<div class="card"><h2>Atualizar estoque (LX03 - depósito WAL)</h2>
+<p class="mu">Selecione o arquivo exportado da LX03 (.xlsx ou .csv). Precisa ter uma coluna de material e uma de quantidade; linhas do mesmo SKU são somadas. O envio substitui o estoque anterior.</p>
+<div class="row"><input type="file" id="arq" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir" disabled>Substituir estoque</button></div><div id="up-res"></div></div>
+<div class="card"><h2>Solicitações recusadas</h2><div class="tw"><table id="tab-rej"></table></div></div>
+<div class="card"><h2>QR code</h2><div class="row"><div id="qr"></div><div><div class="mu" id="qr-url" style="margin-bottom:10px;word-break:break-all"></div><button class="btn" id="qr-dl">Baixar PNG</button></div></div></div>
+</div></section>
+</main>
+
+<script>
+// === CONFIGURAÇÃO DO FIREBASE DA ATLAS SCHINDLER ===
+const firebaseConfig = {
+  apiKey: "AIzaSyD-0bW8ZgOSmuhtAkq3AwP4InGI6_GXTlk",
+  authDomain: "atlas-materiais.firebaseapp.com",
+  databaseURL: "https://atlas-materiais-default-rtdb.firebaseio.com",
+  projectId: "atlas-materiais",
+  storageBucket: "atlas-materiais.firebasestorage.app",
+  messagingSenderId: "238345640081",
+  appId: "1:238345640081:web:ba04fcd1c2aab65e37c730"
+};
+
+// Inicializa o Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const _n2i2qqfug="85d5d1d8732782a1",_4kv4kpm8h="fe382e6906bda791f1818bbec63776e56051c2f5fe1737d934e9620ef0b7b831",_r48htt6ka="bf3a6c37f94d3b51f2f716e0af0387227800c28c9662607f31f0c602a457b471";
+const $=id=>document.getElementById(id);
+
+let stock={}, meta=null, reqs=[], rejs=[], open={painel:false,admin:false};
+const fmt=iso=>iso?new Date(iso).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}):'';
+const normSku=s=>String(s||'').trim().toUpperCase().replace(/^0+(?=.)/,'');
+const skuOk=s=>/^[A-Za-z0-9]+_{0,2}$/.test(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// Sincronização em Tempo Real com o Firebase
+db.ref('mc_stock').on('value', snap => { stock = snap.val() || {}; validate(); });
+db.ref('mc_meta').on('value', snap => { meta = snap.val() || null; renderStatus(); });
+db.ref('mc_reqs').on('value', snap => { 
+  const val = snap.val() || {}; 
+  reqs = Object.keys(val).map(k => val[k]).sort((a,b) => new Date(b.criadoEm) - new Date(a.criadoEm));
+  if(open.painel) renderPainel();
+});
+db.ref('mc_rejs').on('value', snap => { 
+  const val = snap.val() || {}; 
+  rejs = Object.keys(val).map(k => val[k]).sort((a,b) => new Date(b.criadoEm) - new Date(a.criadoEm));
+  if(open.admin) renderRej();
+});
+
+function show(v){['form','painel','admin'].forEach(k=>{$('v-'+k).classList.toggle('hide',k!==v);$('t-'+k).classList.toggle('on',k===v)})}
+['form','painel','admin'].forEach(k=>$('t-'+k).onclick=()=>show(k));
+['painel','admin'].forEach(k=>{
+  const go=()=>{const ok=sha256(_n2i2qqfug+$('pw-'+k).value)===(k==='painel'?_4kv4kpm8h:_r48htt6ka);$('pw-'+k).value='';
+    if(!ok){$('er-'+k).innerHTML='<div class="err">Senha incorreta.</div>';return}
+    open[k]=true;$('lk-'+k).classList.add('hide');$('in-'+k).classList.remove('hide');if(k==='painel')renderPainel();else renderRej()};
+  $('go-'+k).onclick=go;$('pw-'+k).onkeydown=e=>{if(e.key==='Enter')go()};
+});
+
+function renderStatus(){$('status').textContent=meta?`Estoque WAL atualizado em ${fmt(meta.updatedAt)} (${meta.count} SKUs)`:'Estoque ainda não carregado.';validate()}
+function validate(){
+  const raw=$('f-sku').value,m=$('sku-msg');let ok=false;m.innerHTML='';
+  if(raw){
+    if(/\s/.test(raw)||!skuOk(raw))m.innerHTML='<div class="err">SKU inválido: use só letras e números ("_" apenas nas duas últimas posições, sem espaços).</div>';
+    else if((stock[normSku(raw)]||0)>0)m.innerHTML='<div class="err">Solicitação Recusada. Material contém estoque.</div>';
+    else ok=true;
+  }
+  $('enviar').disabled=!(ok&&meta);
+}
+$('f-sku').oninput=validate;
+setInterval(()=>{$('f-dt').value=fmt(new Date().toISOString())},1000);$('f-dt').value=fmt(new Date().toISOString());
+
+$('enviar').onclick=async()=>{
+  const res=$('f-res');res.innerHTML='';const v=id=>$(id).value.trim();
+  const rec={nome:v('f-nome'),usuario:v('f-user'),linha:v('f-linha'),posicao:v('f-pos'),sku:v('f-sku').toUpperCase(),quantidade:Number(v('f-qtd')),circuito:v('f-circ'),obs:v('f-obs'),criadoEm:new Date().toISOString()};
+  if(!rec.nome||!rec.usuario||!rec.linha||!rec.posicao||!(rec.quantidade>0)){res.innerHTML='<div class="err">Preencha nome, usuário, linha, posição e quantidade.</div>';return}
+  
+  $('enviar').disabled = true;
+  if(!skuOk(rec.sku)||(stock[normSku(rec.sku)]||0)>0){
+    await db.ref('mc_rejs').push({...rec,motivo:'Material contém estoque'});
+    res.innerHTML='<div class="err">Solicitação Recusada. Material contém estoque.</div>';validate();return
+  }
+  
+  await db.ref('mc_reqs').push(rec);
+  res.innerHTML='<div class="okm">Solicitação registrada com sucesso.</div>';
+  ['f-sku','f-qtd','f-circ','f-obs'].forEach(i=>$(i).value='');validate();
+};
+
+const COLS=[['Data/hora',r=>fmt(r.criadoEm)],['Operador',r=>r.nome],['Usuário',r=>r.usuario],['Linha',r=>r.linha],['Posição',r=>r.posicao],['SKU',r=>r.sku],['Qtd',r=>r.quantidade],['Circuito',r=>r.circuito],['Observação',r=>r.obs]];
+function filtered(){const q=$('filtro').value.toLowerCase();return reqs.filter(r=>!q||COLS.some(c=>String(c[1](r)??'').toLowerCase().includes(q)))}
+function renderPainel(){const rows=filtered();$('cnt').textContent=rows.length+' registro(s)';
+  $('tab').innerHTML='<thead><tr>'+COLS.map(c=>'<th>'+c[0]+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+COLS.map(c=>'<td>'+esc(c[1](r))+'</td>').join('')+'</tr>').join('')+'</tbody>'}
+$('filtro').oninput=renderPainel;
+
+$('copiar').onclick=async()=>{const t=[COLS.map(c=>c[0]).join('\t'),...filtered().map(r=>COLS.map(c=>String(c[1](r)??'').replace(/\s+/g,' ')).join('\t'))].join('\n');try{await navigator.clipboard.writeText(t);$('cnt').textContent='Copiado!'}catch(e){$('cnt').textContent='Não foi possível copiar'}};
+$('xl').onclick=async()=>{
+  const rows=filtered(),wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Solicitações');
+  const heads=[...COLS.map(c=>c[0]),'Status'];ws.addRow(heads);rows.forEach(r=>ws.addRow([...COLS.map(c=>c[1](r)),'']));
+  const W=[20,22,16,12,12,16,8,14,34,18];W.forEach((w,i)=>ws.getColumn(i+1).width=w);
+  const hr=ws.getRow(1);hr.font={bold:true,color:{argb:'FFFFFFFF'}};hr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1B1F24'}}});
+  ws.getCell('J1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD6001C'}};
+  const last=rows.length+300;for(let i=2;i<=last;i++){const c=ws.getCell('J'+i);c.protection={locked:false};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF8DC'}}}
+  ws.autoFilter={from:'A1',to:'J1'};ws.views=[{state:'frozen',ySplit:1}];
+  await ws.protect(atob('MDEwNTcx'),{selectLockedCells:true,selectUnlockedCells:true,autoFilter:true,sort:true,formatColumns:true});
+  const buf=await wb.xlsx.writeBuffer(),a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download='solicitacoes_materiais_criticos.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+};
+
+function renderRej(){$('tab-rej').innerHTML='<thead><tr><th>Data/hora</th><th>Operador</th><th>Usuário</th><th>Linha</th><th>SKU</th><th>Qtd</th></tr></thead><tbody>'+rejs.map(r=>`<tr><td>${esc(fmt(r.criadoEm))}</td><td>${esc(r.nome)}</td><td>${esc(r.usuario)}</td><td>${esc(r.linha)}</td><td>${esc(r.sku)}</td><td>${esc(r.quantidade)}</td></tr>`).join('')+'</tbody>'}
+let parsed=null;
+$('arq').onchange=async e=>{
+  const f=e.target.files[0];$('subir').disabled=true;parsed=null;if(!f)return;
+  try{
+    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+    const hi=rows.findIndex(r=>r.some(c=>/material/i.test(c)));if(hi<0)throw new Error('Coluna de material não encontrada');
+    const h=rows[hi].map(c=>String(c).toLowerCase()),ci=h.findIndex(c=>/material/.test(c)),qi=h.findIndex(c=>/(estoque|qtd|quant)/.test(c));
+    if(qi<0)throw new Error('Coluna de quantidade não encontrada');
+    const m={};rows.slice(hi+1).forEach(r=>{const k=normSku(r[ci]);if(!k)return;const q=parseFloat(String(r[qi]).replace(/\./g,'').replace(',','.'))||0;m[k]=(m[k]||0)+q});
+    parsed=m;$('up-res').innerHTML=`<div class="okm">${Object.keys(m).length} SKUs lidos (material: "${esc(rows[hi][ci])}", quantidade: "${esc(rows[hi][qi])}"). Confira e clique em Substituir.</div>`;$('subir').disabled=false;
+  }catch(err){$('up-res').innerHTML='<div class="err">'+esc(err.message)+'</div>'}
+};
+
+$('subir').onclick=async()=>{
+  try{
+    stock=parsed;
+    meta={updatedAt:new Date().toISOString(),count:Object.keys(parsed).length};
+    await db.ref('mc_stock').set(stock);
+    await db.ref('mc_meta').set(meta);
+    $('up-res').innerHTML='<div class="okm">Estoque atualizado na nuvem.</div>';
+    $('subir').disabled=true;renderStatus();
+  }catch(e){
+    $('up-res').innerHTML='<div class="err">Não foi possível salvar no banco: '+esc(e.message)+'</div>';
+  }
+};
+
+$('qr-url').textContent=location.href.split('#')[0];new QRCode($('qr'),{text:location.href.split('#')[0],width:180,height:180});
+$('qr-dl').onclick=()=>{const cv=$('qr').querySelector('canvas');if(!cv)return;const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='qrcode_materiais_criticos.png';a.click()};
+
+function sha256(str){const b=new TextEncoder().encode(str),K=[],H=[];for(let c=2,n=0;n<64;c++){let ok=1;for(let d=2;d*d<=c;d++)if(c%d==0){ok=0;break}if(ok){if(n<8)H[n]=(Math.pow(c,.5)%1)*4294967296|0;K[n++]=(Math.pow(c,1/3)%1)*4294967296|0}}
+const R=(x,n)=>(x>>>n)|(x<<(32-n)),l=b.length,N=(((l+8)>>6)+1)<<4,w=new Array(N).fill(0);for(let i=0;i<l;i++)w[i>>2]|=b[i]<<(24-(i&3)*8);w[l>>2]|=0x80<<(24-(l&3)*8);w[N-1]=l*8;let h=H.slice();
+for(let i=0;i<N;i+=16){const a=w.slice(i,i+16);for(let j=16;j<64;j++){const x=a[j-15],y=a[j-2];a[j]=(a[j-16]+(R(x,7)^R(x,18)^(x>>>3))+a[j-7]+(R(y,17)^R(y,19)^(y>>>10)))|0}
+let [A,B,C,D,E,F,G,Q]=h;for(let j=0;j<64;j++){const t1=(Q+(R(E,6)^R(E,11)^R(E,25))+((E&F)^(~E&G))+K[j]+a[j])|0,t2=((R(A,2)^R(A,13)^R(A,22))+((A&B)^(A&C)^(B&C)))|0;Q=G;G=F;F=E;E=(D+t1)|0;D=C;C=B;B=A;A=(t1+t2)|0}
+h=[h[0]+A|0,h[1]+B|0,h[2]+C|0,h[3]+D|0,h[4]+E|0,h[5]+F|0,h[6]+G|0,h[7]+Q|0]}
+return h.map(v=>(v>>>0).toString(16).padStart(8,'0')).join('')}
+</script></body></html>
