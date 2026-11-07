@@ -69,13 +69,19 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
 <div class="card lock" id="lk-admin"><h2>Área do administrador</h2><input type="password" id="pw-admin" placeholder="Senha" autocomplete="off"><div style="margin-top:12px"><button class="btn" id="go-admin">Entrar</button></div><div id="er-admin"></div></div>
 <div id="in-admin" class="hide">
 
-<div class="card"><h2>1. Cadastro Geral de Materiais (Master Data)</h2>
-<p class="mu">Selecione o arquivo contendo a lista completa de materiais cadastrados na empresa (.xlsx ou .csv). Precisa conter a coluna "Material" ou "SKU".</p>
-<div class="row"><input type="file" id="arq-master" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir-master" disabled>Atualizar Cadastro</button></div><div id="up-res-master"></div></div>
+<div class="card">
+  <h2>Cadastro Geral de Materiais (Master Data)</h2>
+  <p class="mu">Selecione o arquivo contendo a lista completa de materiais cadastrados (.xlsx ou .csv). Precisa conter a coluna "Material" ou "SKU".</p>
+  <div class="row"><input type="file" id="arq-master" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir-master" disabled>Atualizar Cadastro</button></div>
+  <div id="up-res-master"></div>
+</div>
 
-<div class="card"><h2>2. Atualizar Estoque (LX03 - Depósito WAL)</h2>
-<p class="mu">Selecione o arquivo exportado da LX03 (.xlsx ou .csv). Precisa ter uma coluna de material e uma de quantidade. Linhas do mesmo SKU são somadas.</p>
-<div class="row"><input type="file" id="arq" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir" disabled>Substituir Estoque</button></div><div id="up-res"></div></div>
+<div class="card">
+  <h2>Estoque Atual (LX03 - Depósito WAL)</h2>
+  <p class="mu">Selecione o arquivo exportado da LX03 (.xlsx ou .csv). Precisa ter uma coluna de material e uma de quantidade; linhas do mesmo SKU são somadas.</p>
+  <div class="row"><input type="file" id="arq" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir" disabled>Substituir Estoque</button></div>
+  <div id="up-res"></div>
+</div>
 
 <div class="card"><h2>Solicitações recusadas</h2><div class="tw"><table id="tab-rej"></table></div></div>
 <div class="card"><h2>QR code</h2><div class="row"><div id="qr"></div><div><div class="mu" id="qr-url" style="margin-bottom:10px;word-break:break-all"></div><button class="btn" id="qr-dl">Baixar PNG</button></div></div></div>
@@ -135,8 +141,8 @@ function show(v){['form','painel','admin'].forEach(k=>{$('v-'+k).classList.toggl
 
 function renderStatus(){
   let s = [];
-  s.push(metaMaster ? `Cadastro de Materiais: ${metaMaster.count} SKUs` : 'Cadastro de materiais pendente');
-  s.push(meta ? `Estoque WAL: ${meta.count} SKUs (atualizado ${fmt(meta.updatedAt)})` : 'Estoque WAL pendente');
+  s.push(metaMaster ? `Cadastro: ${metaMaster.count} SKUs` : 'Cadastro pendente');
+  s.push(meta ? `Estoque WAL: ${meta.count} SKUs` : 'Estoque pendente');
   $('status').textContent = s.join(' | ');
   validate();
 }
@@ -170,19 +176,16 @@ $('enviar').onclick=async()=>{
   $('enviar').disabled = true;
   const clean = normSku(rec.sku);
 
-  // Trava de Segurança 1: Material Inexistente
   if(metaMaster && !master[clean]){
     await db.ref('mc_rejs').push({...rec,motivo:'O material não existe'});
     res.innerHTML='<div class="err">Solicitação Recusada. O material não existe.</div>';validate();return;
   }
 
-  // Trava de Segurança 2: Material com Estoque
   if((stock[clean]||0)>0){
     await db.ref('mc_rejs').push({...rec,motivo:'Material contém estoque'});
     res.innerHTML='<div class="err">Solicitação Recusada. Material contém estoque.</div>';validate();return;
   }
   
-  // Aprovado
   await db.ref('mc_reqs').push(rec);
   res.innerHTML='<div class="okm">Solicitação registrada com sucesso.</div>';
   ['f-sku','f-qtd','f-circ','f-obs'].forEach(i=>$(i).value='');validate();
@@ -210,7 +213,6 @@ $('xl').onclick=async()=>{
 
 function renderRej(){$('tab-rej').innerHTML='<thead><tr><th>Data/hora</th><th>Operador</th><th>Usuário</th><th>Linha</th><th>SKU</th><th>Qtd</th><th>Motivo</th></tr></thead><tbody>'+rejs.map(r=>`<tr><td>${esc(fmt(r.criadoEm))}</td><td>${esc(r.nome)}</td><td>${esc(r.usuario)}</td><td>${esc(r.linha)}</td><td>${esc(r.sku)}</td><td>${esc(r.quantidade)}</td><td>${esc(r.motivo||'Recusada')}</td></tr>`).join('')+'</tbody>'}
 
-// Upload do Cadastro Geral de Materiais (Master Data)
 let parsedMaster=null;
 $('arq-master').onchange=async e=>{
   const f=e.target.files[0];$('subir-master').disabled=true;parsedMaster=null;if(!f)return;
@@ -219,7 +221,7 @@ $('arq-master').onchange=async e=>{
     const hi=rows.findIndex(r=>r.some(c=>/(material|sku)/i.test(c)));if(hi<0)throw new Error('Coluna "Material" ou "SKU" não encontrada');
     const h=rows[hi].map(c=>String(c).toLowerCase()),ci=h.findIndex(c=>/(material|sku)/.test(c));
     const m={};rows.slice(hi+1).forEach(r=>{const k=normSku(r[ci]);if(k)m[k]=true});
-    parsedMaster=m;$('up-res-master').innerHTML=`<div class="okm">${Object.keys(m).length} SKUs identificados no cadastro. Confira e clique em Atualizar.</div>`;$('subir-master').disabled=false;
+    parsedMaster=m;$('up-res-master').innerHTML=`<div class="okm">${Object.keys(m).length} SKUs identificados. Clique em Atualizar Cadastro.</div>`;$('subir-master').disabled=false;
   }catch(err){$('up-res-master').innerHTML='<div class="err">'+esc(err.message)+'</div>'}
 };
 
@@ -236,7 +238,6 @@ $('subir-master').onclick=async()=>{
   }
 };
 
-// Upload de Estoque (LX03)
 let parsed=null;
 $('arq').onchange=async e=>{
   const f=e.target.files[0];$('subir').disabled=true;parsed=null;if(!f)return;
@@ -245,8 +246,8 @@ $('arq').onchange=async e=>{
     const hi=rows.findIndex(r=>r.some(c=>/material/i.test(c)));if(hi<0)throw new Error('Coluna de material não encontrada');
     const h=rows[hi].map(c=>String(c).toLowerCase()),ci=h.findIndex(c=>/material/.test(c)),qi=h.findIndex(c=>/(estoque|qtd|quant)/.test(c));
     if(qi<0)throw new Error('Coluna de quantidade não encontrada');
-    const m={};rows.slice(hi+1).forEach(r=>{const k=normSku(r[ci]);if(!k)return;const q=parseFloat(String(r[qi]).replace(/\./g,'').replace(',','.'))||0;m[k]=(m[k]||0)+q});
-    parsed=m;$('up-res').innerHTML=`<div class="okm">${Object.keys(m).length} SKUs lidos (material: "${esc(rows[hi][ci])}", quantidade: "${esc(rows[hi][qi])}"). Confira e clique em Substituir.</div>`;$('subir').disabled=false;
+    const m={};rows.slice(hi+1).forEach(r=>{const k=normSku(r[ci]);if(k){const q=parseFloat(String(r[qi]).replace(/\./g,'').replace(',','.'))||0;m[k]=(m[k]||0)+q}});
+    parsed=m;$('up-res').innerHTML=`<div class="okm">${Object.keys(m).length} SKUs lidos. Clique em Substituir Estoque.</div>`;$('subir').disabled=false;
   }catch(err){$('up-res').innerHTML='<div class="err">'+esc(err.message)+'</div>'}
 };
 
@@ -259,7 +260,7 @@ $('subir').onclick=async()=>{
     $('up-res').innerHTML='<div class="okm">Estoque atualizado na nuvem.</div>';
     $('subir').disabled=true;renderStatus();
   }catch(e){
-    $('up-res').innerHTML='<div class="err">Não foi possível salvar no banco: '+esc(e.message)+'</div>';
+    $('up-res-'.innerHTML='<div class="err">Erro ao salvar estoque: '+esc(e.message)+'</div>');
   }
 };
 
