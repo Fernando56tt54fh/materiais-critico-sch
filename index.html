@@ -68,9 +68,15 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
 <section id="v-admin" class="hide">
 <div class="card lock" id="lk-admin"><h2>Área do administrador</h2><input type="password" id="pw-admin" placeholder="Senha" autocomplete="off"><div style="margin-top:12px"><button class="btn" id="go-admin">Entrar</button></div><div id="er-admin"></div></div>
 <div id="in-admin" class="hide">
-<div class="card"><h2>Atualizar estoque (LX03 - depósito WAL)</h2>
-<p class="mu">Selecione o arquivo exportado da LX03 (.xlsx ou .csv). Precisa ter uma coluna de material e uma de quantidade; linhas do mesmo SKU são somadas. O envio substitui o estoque anterior.</p>
-<div class="row"><input type="file" id="arq" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir" disabled>Substituir estoque</button></div><div id="up-res"></div></div>
+
+<div class="card"><h2>1. Cadastro Geral de Materiais (Master Data)</h2>
+<p class="mu">Selecione o arquivo contendo a lista completa de materiais cadastrados na empresa (.xlsx ou .csv). Precisa conter a coluna "Material" ou "SKU".</p>
+<div class="row"><input type="file" id="arq-master" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir-master" disabled>Atualizar Cadastro</button></div><div id="up-res-master"></div></div>
+
+<div class="card"><h2>2. Atualizar Estoque (LX03 - Depósito WAL)</h2>
+<p class="mu">Selecione o arquivo exportado da LX03 (.xlsx ou .csv). Precisa ter uma coluna de material e uma de quantidade. Linhas do mesmo SKU são somadas.</p>
+<div class="row"><input type="file" id="arq" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir" disabled>Substituir Estoque</button></div><div id="up-res"></div></div>
+
 <div class="card"><h2>Solicitações recusadas</h2><div class="tw"><table id="tab-rej"></table></div></div>
 <div class="card"><h2>QR code</h2><div class="row"><div id="qr"></div><div><div class="mu" id="qr-url" style="margin-bottom:10px;word-break:break-all"></div><button class="btn" id="qr-dl">Baixar PNG</button></div></div></div>
 </div></section>
@@ -95,7 +101,7 @@ const db = firebase.database();
 const _n2i2qqfug="85d5d1d8732782a1",_4kv4kpm8h="fe382e6906bda791f1818bbec63776e56051c2f5fe1737d934e9620ef0b7b831",_r48htt6ka="bf3a6c37f94d3b51f2f716e0af0387227800c28c9662607f31f0c602a457b471";
 const $=id=>document.getElementById(id);
 
-let stock={}, meta=null, reqs=[], rejs=[], open={painel:false,admin:false};
+let stock={}, master={}, meta=null, metaMaster=null, reqs=[], rejs=[], open={painel:false,admin:false};
 const fmt=iso=>iso?new Date(iso).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}):'';
 const normSku=s=>String(s||'').trim().toUpperCase().replace(/^0+(?=.)/,'');
 const skuOk=s=>/^[A-Za-z0-9]+_{0,2}$/.test(s);
@@ -103,7 +109,10 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 
 // Sincronização em Tempo Real com o Firebase
 db.ref('mc_stock').on('value', snap => { stock = snap.val() || {}; validate(); });
+db.ref('mc_master').on('value', snap => { master = snap.val() || {}; validate(); });
 db.ref('mc_meta').on('value', snap => { meta = snap.val() || null; renderStatus(); });
+db.ref('mc_meta_master').on('value', snap => { metaMaster = snap.val() || null; renderStatus(); });
+
 db.ref('mc_reqs').on('value', snap => { 
   const val = snap.val() || {}; 
   reqs = Object.keys(val).map(k => val[k]).sort((a,b) => new Date(b.criadoEm) - new Date(a.criadoEm));
@@ -124,16 +133,32 @@ function show(v){['form','painel','admin'].forEach(k=>{$('v-'+k).classList.toggl
   $('go-'+k).onclick=go;$('pw-'+k).onkeydown=e=>{if(e.key==='Enter')go()};
 });
 
-function renderStatus(){$('status').textContent=meta?`Estoque WAL atualizado em ${fmt(meta.updatedAt)} (${meta.count} SKUs)`:'Estoque ainda não carregado.';validate()}
+function renderStatus(){
+  let s = [];
+  s.push(metaMaster ? `Cadastro de Materiais: ${metaMaster.count} SKUs` : 'Cadastro de materiais pendente');
+  s.push(meta ? `Estoque WAL: ${meta.count} SKUs (atualizado ${fmt(meta.updatedAt)})` : 'Estoque WAL pendente');
+  $('status').textContent = s.join(' | ');
+  validate();
+}
+
 function validate(){
   const raw=$('f-sku').value,m=$('sku-msg');let ok=false;m.innerHTML='';
+  const clean = normSku(raw);
+
   if(raw){
-    if(/\s/.test(raw)||!skuOk(raw))m.innerHTML='<div class="err">SKU inválido: use só letras e números ("_" apenas nas duas últimas posições, sem espaços).</div>';
-    else if((stock[normSku(raw)]||0)>0)m.innerHTML='<div class="err">Solicitação Recusada. Material contém estoque.</div>';
-    else ok=true;
+    if(/\s/.test(raw)||!skuOk(raw)){
+      m.innerHTML='<div class="err">SKU inválido: use só letras e números ("_" apenas nas duas últimas posições, sem espaços).</div>';
+    } else if(metaMaster && !master[clean]){
+      m.innerHTML='<div class="err">Solicitação Recusada. O material não existe.</div>';
+    } else if((stock[clean]||0)>0){
+      m.innerHTML='<div class="err">Solicitação Recusada. Material contém estoque.</div>';
+    } else {
+      ok=true;
+    }
   }
-  $('enviar').disabled=!(ok&&meta);
+  $('enviar').disabled=!(ok && meta && metaMaster);
 }
+
 $('f-sku').oninput=validate;
 setInterval(()=>{$('f-dt').value=fmt(new Date().toISOString())},1000);$('f-dt').value=fmt(new Date().toISOString());
 
@@ -143,11 +168,21 @@ $('enviar').onclick=async()=>{
   if(!rec.nome||!rec.usuario||!rec.linha||!rec.posicao||!(rec.quantidade>0)){res.innerHTML='<div class="err">Preencha nome, usuário, linha, posição e quantidade.</div>';return}
   
   $('enviar').disabled = true;
-  if(!skuOk(rec.sku)||(stock[normSku(rec.sku)]||0)>0){
+  const clean = normSku(rec.sku);
+
+  // Trava de Segurança 1: Material Inexistente
+  if(metaMaster && !master[clean]){
+    await db.ref('mc_rejs').push({...rec,motivo:'O material não existe'});
+    res.innerHTML='<div class="err">Solicitação Recusada. O material não existe.</div>';validate();return;
+  }
+
+  // Trava de Segurança 2: Material com Estoque
+  if((stock[clean]||0)>0){
     await db.ref('mc_rejs').push({...rec,motivo:'Material contém estoque'});
-    res.innerHTML='<div class="err">Solicitação Recusada. Material contém estoque.</div>';validate();return
+    res.innerHTML='<div class="err">Solicitação Recusada. Material contém estoque.</div>';validate();return;
   }
   
+  // Aprovado
   await db.ref('mc_reqs').push(rec);
   res.innerHTML='<div class="okm">Solicitação registrada com sucesso.</div>';
   ['f-sku','f-qtd','f-circ','f-obs'].forEach(i=>$(i).value='');validate();
@@ -173,7 +208,35 @@ $('xl').onclick=async()=>{
   a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download='solicitacoes_materiais_criticos.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 };
 
-function renderRej(){$('tab-rej').innerHTML='<thead><tr><th>Data/hora</th><th>Operador</th><th>Usuário</th><th>Linha</th><th>SKU</th><th>Qtd</th></tr></thead><tbody>'+rejs.map(r=>`<tr><td>${esc(fmt(r.criadoEm))}</td><td>${esc(r.nome)}</td><td>${esc(r.usuario)}</td><td>${esc(r.linha)}</td><td>${esc(r.sku)}</td><td>${esc(r.quantidade)}</td></tr>`).join('')+'</tbody>'}
+function renderRej(){$('tab-rej').innerHTML='<thead><tr><th>Data/hora</th><th>Operador</th><th>Usuário</th><th>Linha</th><th>SKU</th><th>Qtd</th><th>Motivo</th></tr></thead><tbody>'+rejs.map(r=>`<tr><td>${esc(fmt(r.criadoEm))}</td><td>${esc(r.nome)}</td><td>${esc(r.usuario)}</td><td>${esc(r.linha)}</td><td>${esc(r.sku)}</td><td>${esc(r.quantidade)}</td><td>${esc(r.motivo||'Recusada')}</td></tr>`).join('')+'</tbody>'}
+
+// Upload do Cadastro Geral de Materiais (Master Data)
+let parsedMaster=null;
+$('arq-master').onchange=async e=>{
+  const f=e.target.files[0];$('subir-master').disabled=true;parsedMaster=null;if(!f)return;
+  try{
+    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+    const hi=rows.findIndex(r=>r.some(c=>/(material|sku)/i.test(c)));if(hi<0)throw new Error('Coluna "Material" ou "SKU" não encontrada');
+    const h=rows[hi].map(c=>String(c).toLowerCase()),ci=h.findIndex(c=>/(material|sku)/.test(c));
+    const m={};rows.slice(hi+1).forEach(r=>{const k=normSku(r[ci]);if(k)m[k]=true});
+    parsedMaster=m;$('up-res-master').innerHTML=`<div class="okm">${Object.keys(m).length} SKUs identificados no cadastro. Confira e clique em Atualizar.</div>`;$('subir-master').disabled=false;
+  }catch(err){$('up-res-master').innerHTML='<div class="err">'+esc(err.message)+'</div>'}
+};
+
+$('subir-master').onclick=async()=>{
+  try{
+    master=parsedMaster;
+    metaMaster={updatedAt:new Date().toISOString(),count:Object.keys(parsedMaster).length};
+    await db.ref('mc_master').set(master);
+    await db.ref('mc_meta_master').set(metaMaster);
+    $('up-res-master').innerHTML='<div class="okm">Cadastro de materiais atualizado na nuvem.</div>';
+    $('subir-master').disabled=true;renderStatus();
+  }catch(e){
+    $('up-res-master').innerHTML='<div class="err">Erro ao salvar cadastro: '+esc(e.message)+'</div>';
+  }
+};
+
+// Upload de Estoque (LX03)
 let parsed=null;
 $('arq').onchange=async e=>{
   const f=e.target.files[0];$('subir').disabled=true;parsed=null;if(!f)return;
