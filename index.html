@@ -83,6 +83,13 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
   <div id="up-res"></div>
 </div>
 
+<div class="card">
+  <h2>Gerenciamento de Histórico</h2>
+  <p class="mu">Apague todos os registros de solicitações e recusas armazenados no banco para limpar os testes.</p>
+  <div class="row"><button class="btn sec" id="limpar-hist" style="border-color:var(--er);color:var(--er)">Limpar histórico de solicitações</button></div>
+  <div id="limpar-res"></div>
+</div>
+
 <div class="card"><h2>Solicitações recusadas</h2><div class="tw"><table id="tab-rej"></table></div></div>
 <div class="card"><h2>QR code</h2><div class="row"><div id="qr"></div><div><div class="mu" id="qr-url" style="margin-bottom:10px;word-break:break-all"></div><button class="btn" id="qr-dl">Baixar PNG</button></div></div></div>
 </div></section>
@@ -109,8 +116,8 @@ const $=id=>document.getElementById(id);
 
 let stock={}, master={}, meta=null, metaMaster=null, reqs=[], rejs=[], open={painel:false,admin:false};
 const fmt=iso=>iso?new Date(iso).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}):'';
-const normSku=s=>String(s||'').trim().toUpperCase().replace(/^0+(?=.)/,'').replace(/[.#$／\[\]]/g,'');
-const skuOk=s=>/^[A-Za-z0-9]+_{0,2}$/.test(s);
+const normSku=s=>String(s||'').trim().toUpperCase().replace(/^0+(?=.)/,'').replace(/[.#$\/\[\]]/g,'');
+const skuOk=s=>/^[A-Za-z0-9_\/]+$/.test(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 // Sincronização em Tempo Real com o Firebase
@@ -152,8 +159,8 @@ function validate(){
   const clean = normSku(raw);
 
   if(raw){
-    if(/\s/.test(raw)||!skuOk(raw)){
-      m.innerHTML='<div class="err">SKU inválido: use só letras e números ("_" apenas nas duas últimas posições, sem espaços).</div>';
+    if(/\s/.test(raw)){
+      m.innerHTML='<div class="err">SKU inválido: não pode conter espaços.</div>';
     } else if(metaMaster && !master[clean]){
       m.innerHTML='<div class="err">Solicitação Recusada. O material não existe.</div>';
     } else if((stock[clean]||0)>0){
@@ -213,6 +220,19 @@ $('xl').onclick=async()=>{
 
 function renderRej(){$('tab-rej').innerHTML='<thead><tr><th>Data/hora</th><th>Operador</th><th>Usuário</th><th>Linha</th><th>SKU</th><th>Qtd</th><th>Motivo</th></tr></thead><tbody>'+rejs.map(r=>`<tr><td>${esc(fmt(r.criadoEm))}</td><td>${esc(r.nome)}</td><td>${esc(r.usuario)}</td><td>${esc(r.linha)}</td><td>${esc(r.sku)}</td><td>${esc(r.quantidade)}</td><td>${esc(r.motivo||'Recusada')}</td></tr>`).join('')+'</tbody>'}
 
+// Botão para limpar todo o histórico de solicitações e recusas
+$('limpar-hist').onclick=async()=>{
+  if(confirm('Tem certeza que deseja apagar todo o histórico de solicitações e recusas? Esta ação não pode ser desfeita.')){
+    try{
+      await db.ref('mc_reqs').remove();
+      await db.ref('mc_rejs').remove();
+      $('limpar-res').innerHTML='<div class="okm">Histórico apagado com sucesso na nuvem.</div>';
+    }catch(e){
+      $('limpar-res').innerHTML='<div class="err">Erro ao apagar histórico: '+esc(e.message)+'</div>';
+    }
+  }
+};
+
 let parsedMaster=null;
 $('arq-master').onchange=async e=>{
   const f=e.target.files[0];$('subir-master').disabled=true;parsedMaster=null;if(!f)return;
@@ -260,7 +280,7 @@ $('subir').onclick=async()=>{
     $('up-res').innerHTML='<div class="okm">Estoque atualizado na nuvem.</div>';
     $('subir').disabled=true;renderStatus();
   }catch(e){
-    $('up-res-'.innerHTML='<div class="err">Erro ao salvar estoque: '+esc(e.message)+'</div>');
+    $('up-res').innerHTML='<div class="err">Erro ao salvar estoque: '+esc(e.message)+'</div>';
   }
 };
 
