@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHbElEQVR4nO2Xa1AcRxjHf8/u4W4BBUW8... (ícone embutido)">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Solicitação de materiais críticos - Atlas Schindler</title>
@@ -14,8 +15,8 @@
 
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--mu:#5d6672;--bd:#d9dde3;--ac:#d6001c;--ok:#157347;--er:#b42318;--erbg:#fdecea}
-@media (prefers-color-scheme:dark){:root{--bg:#14171b;--card:#1d2127;--tx:#eceff3;--mu:#9aa4b0;--bd:#343b44;--ac:#ff4d63;--ok:#4cc38a;--er:#ff8a80;--erbg:#3a1c1a}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+[data-theme="dark"]{--bg:#14171b;--card:#1d2127;--tx:#eceff3;--mu:#9aa4b0;--bd:#343b44;--ac:#ff4d63;--ok:#4cc38a;--er:#ff8a80;--erbg:#3a1c1a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transition: background 0.3s, color 0.3s;}
 header{background:#1b1f24;padding:12px 32px;display:flex;align-items:center;gap:24px;border-bottom:3px solid #d6001c;flex-wrap:wrap}
 .brand-logo{display:flex;align-items:center;height:42px}
 .brand-logo img{height:100%;width:auto;display:block}
@@ -23,7 +24,7 @@ header h1{font-size:18px;margin:0;flex:1;color:#fff;border-left:1px solid #4a525
 nav{display:flex;gap:6px}nav button{background:none;border:1px solid #4a525c;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font:inherit}
 nav button.on{background:#d6001c;border-color:#d6001c}
 main{max-width:1180px;margin:28px auto;padding:0 32px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:24px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:24px;margin-bottom:20px;transition: background 0.3s;}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px}.full{grid-column:1/-1}
 label{display:block;font-weight:600;margin-bottom:4px}label small{font-weight:400;color:var(--mu)}
 input,textarea{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
@@ -45,15 +46,24 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
 .filter-tabs{display:flex;gap:8px;margin-bottom:14px}
 .filter-tab{background:none;border:1px solid var(--bd);color:var(--tx);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
 .filter-tab.active{background:var(--ac);border-color:var(--ac);color:#fff}
+
+@keyframes pulse { 0% {transform:scale(1);} 50% {transform:scale(1.2);} 100% {transform:scale(1);} }
+.bell-badge { position:absolute; top:-6px; right:-6px; background:#ff4d63; color:#fff; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; animation: pulse 1.5s infinite; border: 2px solid #1b1f24; }
+.row-urgente { background-color: var(--erbg); border-left: 4px solid var(--ac); }
 </style>
 </head>
 <body>
 <header>
 <div class="brand-logo">
-  <img src="Logo_Atlas_branca.png" alt="Atlas Schindler">
+  <img src="Logo_Atlas_branca.png" alt="Atlas Schindler" onerror="this.style.display='none'">
 </div>
 <h1>Solicitação de materiais críticos</h1>
-<nav><button id="t-form" class="on">Solicitar</button><button id="t-painel">Painel</button><button id="t-admin">Administrador</button></nav>
+<nav>
+  <button id="t-theme" title="Alternar Modo Escuro/Claro">🌙</button>
+  <button id="t-form" class="on">Solicitar</button>
+  <button id="t-painel" style="position:relative">Painel <span id="bell" class="bell-badge hide">0</span></button>
+  <button id="t-admin">Administrador</button>
+</nav>
 </header>
 
 <main>
@@ -68,7 +78,12 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
     <div><label>Nome de usuário</label><input id="f-user"></div>
     <div><label>Linha</label><input id="f-linha"></div>
     <div><label>Posição da linha</label><input id="f-pos"></div>
-    <div><label>SKU</label><input id="f-sku" autocomplete="off" maxlength="40"><div id="sku-msg"></div></div>
+    <div>
+      <label>SKU <small>(Digite ou selecione um recente)</small></label>
+      <input id="f-sku" autocomplete="off" maxlength="40" list="sku-history">
+      <datalist id="sku-history"></datalist>
+      <div id="sku-msg"></div>
+    </div>
     <div><label>Quantidade</label><input id="f-qtd" type="number" min="1" step="1"></div>
     <div><label>Nº do circuito regulador <small>(opcional)</small></label><input id="f-circ"></div>
     <div><label>Data e hora</label><input id="f-dt" disabled></div>
@@ -105,12 +120,26 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
   </div>
 
   <div class="row">
+    <input type="date" id="filtro-dt" title="Filtrar por data" style="max-width: 140px">
     <input id="filtro" placeholder="Filtrar (SKU, linha, operador...)">
     <button class="btn sec" id="copiar">Copiar tabela</button>
     <button class="btn" id="xl">Baixar Excel</button>
     <span class="mu" id="cnt"></span>
   </div>
   <div class="tw"><table id="tab"></table></div>
+
+  <!-- QR Code de Acesso Rápido no Painel -->
+  <div class="card" style="margin-top: 24px; background: var(--bg);">
+    <h3 style="margin-top:0; font-size:16px;">QR Code de Acesso Rápido ao Sistema</h3>
+    <p class="mu">Escaneie com a câmera do celular para abrir o formulário de solicitações diretamente no dispositivo móvel.</p>
+    <div class="row" style="align-items: center; gap: 20px;">
+      <div id="qr-painel" style="background: white; padding: 10px; border-radius: 8px; display: inline-block;"></div>
+      <div>
+        <div class="mu" id="qr-painel-url" style="margin-bottom:10px;word-break:break-all"></div>
+        <button class="btn sec" id="qr-painel-dl">Baixar PNG</button>
+      </div>
+    </div>
+  </div>
 </div>
 </section>
 
@@ -127,7 +156,7 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
   <!-- FORMULÁRIO DE EXCEÇÃO (BYPASS) -->
   <div class="card" style="border: 2px dashed var(--ac);">
     <h2>Solicitação de Exceção (Bypass de Regras)</h2>
-    <p class="mu">Use este formulário para registrar solicitações urgentes (ex: pedidos da chefia). Ignora o bloqueio de estoque e de material inexistente, indo direto para o painel.</p>
+    <p class="mu">Use este formulário para registrar solicitações urgentes (ex: pedidos da chefia). Ignora o bloqueio de estoque e de material inexistente, e entra como PRIORIDADE no painel.</p>
     <div class="grid">
       <div><label>Nome</label><input id="fa-nome"></div>
       <div><label>Nome de usuário</label><input id="fa-user"></div>
@@ -139,19 +168,19 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
       <div><label>Data e hora</label><input id="fa-dt" disabled></div>
       <div class="full"><label>Observação</label><textarea id="fa-obs" rows="2" placeholder="Motivo da exceção..."></textarea></div>
     </div>
-    <div style="margin-top:20px"><button class="btn" id="enviar-adm">Enviar Solicitação (Exceção Adm)</button><div id="fa-res"></div></div>
+    <div style="margin-top:20px"><button class="btn" id="enviar-adm">Enviar Solicitação Urgente</button><div id="fa-res"></div></div>
   </div>
 
   <div class="card">
     <h2>Cadastro Geral de Materiais (Master Data)</h2>
-    <p class="mu">Selecione o arquivo contendo a lista completa de materiais cadastrados (.xlsx ou .csv). Precisa conter a coluna "Material" ou "SKU".</p>
+    <p class="mu">Selecione o arquivo contendo a lista completa de materiais cadastrados (.xlsx ou .csv).</p>
     <div class="row"><input type="file" id="arq-master" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir-master" disabled>Atualizar Cadastro</button></div>
     <div id="up-res-master"></div>
   </div>
 
   <div class="card">
     <h2>Estoque Atual (LX03 - Depósito WAL)</h2>
-    <p class="mu">Selecione o arquivo exportado da LX03 (.xlsx ou .csv). Precisa ter uma coluna de material e uma de quantidade; linhas do mesmo SKU são somadas.</p>
+    <p class="mu">Selecione o arquivo exportado da LX03 (.xlsx ou .csv).</p>
     <div class="row"><input type="file" id="arq" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir" disabled>Substituir Estoque</button></div>
     <div id="up-res"></div>
   </div>
@@ -162,17 +191,12 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
     <div class="row"><button class="btn sec" id="limpar-hist" style="border-color:var(--er);color:var(--er)">Limpar histórico de solicitações</button></div>
     <div id="limpar-res"></div>
   </div>
-
-  <div class="card">
-    <h2>QR code</h2>
-    <div class="row"><div id="qr"></div><div><div class="mu" id="qr-url" style="margin-bottom:10px;word-break:break-all"></div><button class="btn" id="qr-dl">Baixar PNG</button></div></div>
-  </div>
 </div>
 </section>
 </main>
 
 <script>
-// === CONFIGURAÇÃO DO FIREBASE DA ATLAS SCHINDLER ===
+// === CONFIGURAÇÃO DO FIREBASE ===
 const firebaseConfig = {
   apiKey: "AIzaSyD-0bW8ZgOSmuhtAkq3AwP4InGI6_GXTlk",
   authDomain: "atlas-materiais.firebaseapp.com",
@@ -190,23 +214,53 @@ const _n2i2qqfug="85d5d1d8732782a1",_4kv4kpm8h="fe382e6906bda791f1818bbec63776e5
 const $=id=>document.getElementById(id);
 
 let stock={}, master={}, meta=null, metaMaster=null, reqs=[], open={painel:false,admin:false}, currentFilter='all';
+let initialLoad = true, knownReqs = new Set(), unreadCount = 0;
+let skuHist = [];
+
 const fmt=iso=>iso?new Date(iso).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}):'';
 const normSku=s=>String(s||'').trim().toUpperCase().replace(/^0+(?=.)/,'').replace(/[.#$\/\[\]]/g,'');
-const skuOk=s=>/^[A-Za-z0-9_\/]+$/.test(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-// Sincronização LocalStorage (Memória de Terminal para Nome e Usuário)
+// ================= THEME SELECTOR =================
+window.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('sch_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  $('t-theme').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+});
+$('t-theme').onclick = () => {
+  const nt = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nt);
+  localStorage.setItem('sch_theme', nt);
+  $('t-theme').textContent = nt === 'dark' ? '☀️' : '🌙';
+};
+
+// ================= MEMÓRIA LOCAL =================
 window.addEventListener('DOMContentLoaded', () => {
   const savedNome = localStorage.getItem('sch_op_nome');
   const savedUser = localStorage.getItem('sch_op_user');
   if(savedNome) $('f-nome').value = savedNome;
   if(savedUser) $('f-user').value = savedUser;
+  
+  skuHist = JSON.parse(localStorage.getItem('sch_sku_hist') || '[]');
+  renderSkuHist();
 });
 
 $('f-nome').oninput = () => localStorage.setItem('sch_op_nome', $('f-nome').value.trim());
 $('f-user').oninput = () => localStorage.setItem('sch_op_user', $('f-user').value.trim());
 
-// Sincronização em Tempo Real com o Firebase
+function renderSkuHist() {
+  $('sku-history').innerHTML = skuHist.map(s => `<option value="${s}">`).join('');
+}
+function saveSkuHist(sku) {
+  if(!sku) return;
+  skuHist = skuHist.filter(s => s !== sku);
+  skuHist.unshift(sku);
+  if(skuHist.length > 10) skuHist.pop();
+  localStorage.setItem('sch_sku_hist', JSON.stringify(skuHist));
+  renderSkuHist();
+}
+
+// ================= FIREBASE SYNC =================
 db.ref('mc_stock').on('value', snap => { stock = snap.val() || {}; validate(); });
 db.ref('mc_master').on('value', snap => { master = snap.val() || {}; validate(); });
 db.ref('mc_meta').on('value', snap => { meta = snap.val() || null; renderStatus(); });
@@ -214,16 +268,49 @@ db.ref('mc_meta_master').on('value', snap => { metaMaster = snap.val() || null; 
 
 db.ref('mc_reqs').on('value', snap => { 
   const val = snap.val() || {}; 
-  reqs = Object.keys(val).map(k => ({ id: k, ...val[k] })).sort((a,b) => new Date(b.criadoEm) - new Date(a.criadoEm));
+  
+  const newReqs = Object.keys(val).map(k => ({ id: k, ...val[k] })).sort((a,b) => {
+    let aAdm = a.obs && a.obs.includes('[EXCEÇÃO ADM]') && !a.concluidoEm;
+    let bAdm = b.obs && b.obs.includes('[EXCEÇÃO ADM]') && !b.concluidoEm;
+    if(aAdm && !bAdm) return -1;
+    if(!aAdm && bAdm) return 1;
+    return new Date(b.criadoEm) - new Date(a.criadoEm);
+  });
+  
+  if (!initialLoad) {
+    let newArrivals = newReqs.filter(r => !knownReqs.has(r.id) && !r.concluidoEm);
+    if (newArrivals.length > 0) {
+      if (!open.painel) {
+        unreadCount += newArrivals.length;
+        $('bell').textContent = unreadCount;
+        $('bell').classList.remove('hide');
+        try { new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play(); } catch(e){}
+      }
+    }
+  }
+  
+  reqs = newReqs;
+  knownReqs = new Set(reqs.map(r => r.id));
+  initialLoad = false;
+  
   if(open.painel) renderPainel();
 });
 
-function show(v){['form','painel','admin'].forEach(k=>{$('v-'+k).classList.toggle('hide',k!==v);$('t-'+k).classList.toggle('on',k===v)})}
+function show(v){
+  ['form','painel','admin'].forEach(k=>{$('v-'+k).classList.toggle('hide',k!==v);$('t-'+k).classList.toggle('on',k===v)});
+  if(v === 'painel') {
+    unreadCount = 0;
+    $('bell').classList.add('hide');
+    renderPainel();
+  }
+}
 ['form','painel','admin'].forEach(k=>$('t-'+k).onclick=()=>show(k));
 ['painel','admin'].forEach(k=>{
   const go=()=>{const ok=sha256(_n2i2qqfug+$('pw-'+k).value)===(k==='painel'?_4kv4kpm8h:_r48htt6ka);$('pw-'+k).value='';
     if(!ok){$('er-'+k).innerHTML='<div class="err">Senha incorreta.</div>';return}
-    open[k]=true;$('lk-'+k).classList.add('hide');$('in-'+k).classList.remove('hide');if(k==='painel')renderPainel();};
+    open[k]=true;$('lk-'+k).classList.add('hide');$('in-'+k).classList.remove('hide');
+    if(k==='painel') { show('painel'); }
+  };
   $('go-'+k).onclick=go;$('pw-'+k).onkeydown=e=>{if(e.key==='Enter')go()};
 });
 
@@ -260,7 +347,6 @@ setInterval(()=>{
   if($('fa-dt')) $('fa-dt').value = agora;
 },1000);
 
-// Envio normal (pelo operador com travas)
 $('enviar').onclick=async()=>{
   const res=$('f-res');res.innerHTML='';const v=id=>$(id).value.trim();
   const rec={nome:v('f-nome'),usuario:v('f-user'),linha:v('f-linha'),posicao:v('f-pos'),sku:v('f-sku').toUpperCase(),quantidade:Number(v('f-qtd')),circuito:v('f-circ'),obs:v('f-obs'),criadoEm:new Date().toISOString(),concluidoEm:null};
@@ -268,11 +354,12 @@ $('enviar').onclick=async()=>{
   
   $('enviar').disabled = true;
   await db.ref('mc_reqs').push(rec);
+  saveSkuHist(rec.sku);
+  
   res.innerHTML='<div class="okm">Solicitação registrada com sucesso.</div>';
   ['f-sku','f-qtd','f-circ','f-obs'].forEach(i=>$(i).value='');validate();
 };
 
-// Envio Direto via Administrador (Bypass de regras para exceções)
 $('enviar-adm').onclick=async()=>{
   const res=$('fa-res');res.innerHTML='';const v=id=>$(id).value.trim();
   const rec={
@@ -289,7 +376,7 @@ $('enviar-adm').onclick=async()=>{
   };
 
   if(!rec.nome||!rec.usuario||!rec.linha||!rec.posicao||!(rec.quantidade>0)){
-    res.innerHTML='<div class="err">Preencha nome, usuário, linha, posição e quantidade.</div>';return;
+    res.innerHTML='<div class="err">Preencha todos os campos obrigatórios.</div>';return;
   }
 
   try {
@@ -301,35 +388,20 @@ $('enviar-adm').onclick=async()=>{
   }
 };
 
-// Função para marcar como concluído no painel
 window.concluirReq = async (id) => {
-  try {
-    await db.ref('mc_reqs/' + id).update({
-      concluidoEm: new Date().toISOString()
-    });
-  } catch(e) {
-    alert('Erro ao concluir solicitação: ' + e.message);
-  }
+  try { await db.ref('mc_reqs/' + id).update({ concluidoEm: new Date().toISOString() }); } 
+  catch(e) { alert('Erro ao concluir solicitação: ' + e.message); }
 };
 
-// Função para Imprimir Vale-Material Individual
 window.imprimirVale = (id) => {
   const r = reqs.find(x => x.id === id);
   if(!r) return;
   const w = window.open('', '_blank', 'width=600,height=600');
   w.document.write(`
-    <html><head><title>Vale-Material - Atlas Schindler</title>
-    <style>
-      body{font-family:Arial,sans-serif;padding:20px;color:#1b1f24}
-      h2{border-bottom:2px solid #d6001c;padding-bottom:8px;color:#d6001c}
-      .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
-      .box{border:1px solid #d9dde3;padding:10px;border-radius:6px}
-      .label{font-size:12px;color:#5d6672;font-weight:bold}
-      .val{font-size:16px;font-weight:bold;margin-top:4px}
-      .footer{margin-top:30px;font-size:12px;text-align:center;color:#5d6672}
-    </style></head>
+    <html><head><title>Comprovante de Solicitação de Críticos</title>
+    <style>body{font-family:Arial,sans-serif;padding:20px;color:#1b1f24} h2{border-bottom:2px solid #d6001c;padding-bottom:8px;color:#d6001c} .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0} .box{border:1px solid #d9dde3;padding:10px;border-radius:6px} .label{font-size:12px;color:#5d6672;font-weight:bold} .val{font-size:16px;font-weight:bold;margin-top:4px} .footer{margin-top:30px;font-size:12px;text-align:center;color:#5d6672}</style></head>
     <body>
-      <h2>Atlas Schindler - Vale-Material Crítico</h2>
+      <h2>Comprovante de Solicitação de Críticos</h2>
       <div class="grid">
         <div class="box"><div class="label">DATA / HORA</div><div class="val">${fmt(r.criadoEm)}</div></div>
         <div class="box"><div class="label">OPERADOR</div><div class="val">${esc(r.nome)} (${esc(r.usuario)})</div></div>
@@ -347,29 +419,26 @@ window.imprimirVale = (id) => {
 };
 
 const COLS=[
-  ['Data/hora', r=>fmt(r.criadoEm)],
-  ['Operador', r=>r.nome],
-  ['Usuário', r=>r.usuario],
-  ['Linha', r=>r.linha],
-  ['Posição', r=>r.posicao],
-  ['SKU', r=>r.sku],
-  ['Qtd', r=>r.quantidade],
-  ['Circuito', r=>r.circuito],
-  ['Observação', r=>r.obs],
-  ['Concluído em', r=>fmt(r.concluidoEm)]
+  ['Data/hora', r=>fmt(r.criadoEm)], ['Operador', r=>r.nome], ['Usuário', r=>r.usuario],
+  ['Linha', r=>r.linha], ['Posição', r=>r.posicao], ['SKU', r=>r.sku],
+  ['Qtd', r=>r.quantidade], ['Circuito', r=>r.circuito], ['Observação', r=>r.obs]
 ];
 
 function filtered(){
   const q=$('filtro').value.toLowerCase();
+  const d=$('filtro-dt').value;
   return reqs.filter(r=>{
     const matchText = !q || COLS.some(c=>String(c[1](r)??'').toLowerCase().includes(q));
+    const matchDate = !d || r.criadoEm.startsWith(d);
     const isCompleted = !!r.concluidoEm;
+    
     if(currentFilter === 'pending' && isCompleted) return false;
     if(currentFilter === 'completed' && !isCompleted) return false;
-    return matchText;
+    return matchText && matchDate;
   });
 }
 
+let qrInitialized = false;
 function renderPainel(){
   const total = reqs.length;
   const concluidos = reqs.filter(r => r.concluidoEm).length;
@@ -383,27 +452,45 @@ function renderPainel(){
   
   let html = '<thead><tr>';
   COLS.forEach(c => html += '<th>' + c[0] + '</th>');
-  html += '<th>Ações</th></tr></thead><tbody>';
+  html += '<th>Status</th><th>Ações</th></tr></thead><tbody>';
   
   rows.forEach(r => {
-    html += '<tr>';
-    COLS.forEach(c => {
-      html += '<td>' + esc(c[1](r)) + '</td>';
+    let isAdm = r.obs && r.obs.includes('[EXCEÇÃO ADM]');
+    let cssRow = isAdm && !r.concluidoEm ? 'class="row-urgente"' : '';
+    
+    html += `<tr ${cssRow}>`;
+    COLS.forEach((c, idx) => {
+      let val = esc(c[1](r));
+      if(idx === 5 && isAdm && !r.concluidoEm) val = `<b style="color:var(--er);font-size:12px">⚠️ PRIORIDADE:</b><br>${val}`;
+      html += '<td>' + val + '</td>';
     });
+    
+    html += `<td>${r.concluidoEm ? '<span style="color:var(--ok);font-weight:600">✓ Concluído</span><br><small>'+fmt(r.concluidoEm)+'</small>' : '<span style="color:var(--ac);font-weight:600">Pendente</span>'}</td>`;
+    
     html += '<td style="display:flex;gap:6px;align-items:center">';
-    if(r.concluidoEm){
-      html += '<span style="color:var(--ok);font-weight:600">✓ Concluído</span> ';
-    } else {
-      html += `<button class="btn" style="padding:4px 10px;font-size:12px" onclick="concluirReq('${r.id}')">Concluir</button> `;
-    }
-    html += `<button class="btn sec" style="padding:4px 8px;font-size:12px" onclick="imprimirVale('${r.id}')" title="Imprimir Vale">🖨️</button>`;
+    if(!r.concluidoEm) { html += `<button class="btn" style="padding:4px 10px;font-size:12px" onclick="concluirReq('${r.id}')">Concluir</button> `; }
+    html += `<button class="btn sec" style="padding:4px 8px;font-size:12px" onclick="imprimirVale('${r.id}')" title="Imprimir">🖨️</button>`;
     html += '</td></tr>';
   });
   html += '</tbody>';
   $('tab').innerHTML = html;
+
+  if(!qrInitialized) {
+    const urlApp = location.href.split('#')[0];
+    $('qr-painel-url').textContent = urlApp;
+    new QRCode($('qr-painel'), { text: urlApp, width: 140, height: 140 });
+    $('qr-painel-dl').onclick = () => {
+      const cv = $('qr-painel').querySelector('canvas');
+      if(!cv) return;
+      const a = document.createElement('a');
+      a.href = cv.toDataURL('image/png');
+      a.download = 'qrcode_painel_materiais.png';
+      a.click();
+    };
+    qrInitialized = true;
+  }
 }
 
-// Eventos dos botões de filtro do painel
 document.querySelectorAll('.filter-tab').forEach(btn => {
   btn.onclick = (e) => {
     document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
@@ -414,35 +501,31 @@ document.querySelectorAll('.filter-tab').forEach(btn => {
 });
 
 $('filtro').oninput=renderPainel;
+$('filtro-dt').onchange=renderPainel;
 
 $('copiar').onclick=async()=>{
-  const t=[COLS.map(c=>c[0]).join('\t'),...filtered().map(r=>COLS.map(c=>String(c[1](r)??'').replace(/\s+/g,' ')).join('\t'))].join('\n');
+  const t=[[...COLS.map(c=>c[0]),'Status'].join('\t'),...filtered().map(r=>[...COLS.map(c=>String(c[1](r)??'').replace(/\s+/g,' ')), r.concluidoEm?'Concluído':'Pendente'].join('\t'))].join('\n');
   try{await navigator.clipboard.writeText(t);$('cnt').textContent='Copiado!'}catch(e){$('cnt').textContent='Não foi possível copiar'}
 };
 
 $('xl').onclick=async()=>{
   const rows=filtered(),wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Solicitações');
-  const heads=[...COLS.map(c=>c[0]),'Status'];ws.addRow(heads);rows.forEach(r=>ws.addRow([...COLS.map(c=>c[1](r)),'']));
-  const W=[20,22,16,12,12,16,8,14,34,18,18];W.forEach((w,i)=>ws.getColumn(i+1).width=w);
+  const heads=[...COLS.map(c=>c[0]),'Status'];ws.addRow(heads);rows.forEach(r=>ws.addRow([...COLS.map(c=>c[1](r)),r.concluidoEm?'Concluido':'Pendente']));
+  const W=[20,22,16,12,12,16,8,14,34,18];W.forEach((w,i)=>ws.getColumn(i+1).width=w);
   const hr=ws.getRow(1);hr.font={bold:true,color:{argb:'FFFFFFFF'}};hr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1B1F24'}}});
-  ws.getCell('K1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD6001C'}};
-  const last=rows.length+300;for(let i=2;i<=last;i++){const c=ws.getCell('K'+i);c.protection={locked:false};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF8DC'}}}
-  ws.autoFilter={from:'A1',to:'K1'};ws.views=[{state:'frozen',ySplit:1}];
+  ws.getCell('J1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD6001C'}};
+  const last=rows.length+300;for(let i=2;i<=last;i++){const c=ws.getCell('J'+i);c.protection={locked:false};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF8DC'}}}
+  ws.autoFilter={from:'A1',to:'J1'};ws.views=[{state:'frozen',ySplit:1}];
   await ws.protect(atob('MDEwNTcx'),{selectLockedCells:true,selectUnlockedCells:true,autoFilter:true,sort:true,formatColumns:true});
   const buf=await wb.xlsx.writeBuffer(),a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
   a.download='solicitacoes_materiais_criticos.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 };
 
-// Botão para limpar todo o histórico de solicitações
 $('limpar-hist').onclick=async()=>{
   if(confirm('Tem certeza que deseja apagar todo o histórico de solicitações? Esta ação não pode ser desfeita.')){
-    try{
-      await db.ref('mc_reqs').remove();
-      $('limpar-res').innerHTML='<div class="okm">Histórico apagado com sucesso na nuvem.</div>';
-    }catch(e){
-      $('limpar-res').innerHTML='<div class="err">Erro ao apagar histórico: '+esc(e.message)+'</div>';
-    }
+    try{ await db.ref('mc_reqs').remove(); $('limpar-res').innerHTML='<div class="okm">Histórico apagado com sucesso na nuvem.</div>'; }
+    catch(e){ $('limpar-res').innerHTML='<div class="err">Erro ao apagar: '+esc(e.message)+'</div>'; }
   }
 };
 
@@ -460,15 +543,11 @@ $('arq-master').onchange=async e=>{
 
 $('subir-master').onclick=async()=>{
   try{
-    master=parsedMaster;
-    metaMaster={updatedAt:new Date().toISOString(),count:Object.keys(parsedMaster).length};
-    await db.ref('mc_master').set(master);
-    await db.ref('mc_meta_master').set(metaMaster);
+    master=parsedMaster; metaMaster={updatedAt:new Date().toISOString(),count:Object.keys(parsedMaster).length};
+    await db.ref('mc_master').set(master); await db.ref('mc_meta_master').set(metaMaster);
     $('up-res-master').innerHTML='<div class="okm">Cadastro de materiais atualizado na nuvem.</div>';
     $('subir-master').disabled=true;renderStatus();
-  }catch(e){
-    $('up-res-master').innerHTML='<div class="err">Erro ao salvar cadastro: '+esc(e.message)+'</div>';
-  }
+  }catch(e){ $('up-res-master').innerHTML='<div class="err">Erro: '+esc(e.message)+'</div>'; }
 };
 
 let parsed=null;
@@ -480,25 +559,18 @@ $('arq').onchange=async e=>{
     const h=rows[hi].map(c=>String(c).toLowerCase()),ci=h.findIndex(c=>/material/.test(c)),qi=h.findIndex(c=>/(estoque|qtd|quant)/.test(c));
     if(qi<0)throw new Error('Coluna de quantidade não encontrada');
     const m={};rows.slice(hi+1).forEach(r=>{const k=normSku(r[ci]);if(k){const q=parseFloat(String(r[qi]).replace(/\./g,'').replace(',','.'))||0;m[k]=(m[k]||0)+q}});
-    parsed=m;$('up-res').innerHTML=`<div class="okm">${Object.keys(m).length} SKUs lidos. Clique em Substituir Estoque.</div>`;$('subir').disabled=false;
+    parsed=m;$('up-res').innerHTML=`<div class="okm">${Object.keys(m).length} SKUs lidos. Clique em Substituir Estoque.`;$('subir').disabled=false;
   }catch(err){$('up-res').innerHTML='<div class="err">'+esc(err.message)+'</div>'}
 };
 
 $('subir').onclick=async()=>{
   try{
-    stock=parsed;
-    meta={updatedAt:new Date().toISOString(),count:Object.keys(parsed).length};
-    await db.ref('mc_stock').set(stock);
-    await db.ref('mc_meta').set(meta);
+    stock=parsed; meta={updatedAt:new Date().toISOString(),count:Object.keys(parsed).length};
+    await db.ref('mc_stock').set(stock); await db.ref('mc_meta').set(meta);
     $('up-res').innerHTML='<div class="okm">Estoque atualizado na nuvem.</div>';
     $('subir').disabled=true;renderStatus();
-  }catch(e){
-    $('up-res').innerHTML='<div class="err">Erro ao salvar estoque: '+esc(e.message)+'</div>';
-  }
+  }catch(e){ $('up-res').innerHTML='<div class="err">Erro: '+esc(e.message)+'</div>'; }
 };
-
-$('qr-url').textContent=location.href.split('#')[0];new QRCode($('qr'),{text:location.href.split('#')[0],width:180,height:180});
-$('qr-dl').onclick=()=>{const cv=$('qr').querySelector('canvas');if(!cv)return;const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='qrcode_materiais_criticos.png';a.click()};
 
 function sha256(str){const b=new TextEncoder().encode(str),K=[],H=[];for(let c=2,n=0;n<64;c++){let ok=1;for(let d=2;d*d<=c;d++)if(c%d==0){ok=0;break}if(ok){if(n<8)H[n]=(Math.pow(c,.5)%1)*4294967296|0;K[n++]=(Math.pow(c,1/3)%1)*4294967296|0}}
 const R=(x,n)=>(x>>>n)|(x<<(32-n)),l=b.length,N=(((l+8)>>6)+1)<<4,w=new Array(N).fill(0);for(let i=0;i<l;i++)w[i>>2]|=b[i]<<(24-(i&3)*8);w[l>>2]|=0x80<<(24-(l&3)*8);w[N-1]=l*8;let h=H.slice();
