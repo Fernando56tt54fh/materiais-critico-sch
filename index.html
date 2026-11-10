@@ -34,6 +34,14 @@ input:focus,textarea:focus{outline:2px solid var(--ac)}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mu);font-weight:600}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.row input{max-width:340px}
 h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margin:60px auto;text-align:center}
+
+/* Estilos Adicionais para Filtros e Painel */
+.filtros-painel button { padding: 6px 14px; font-size: 13px; }
+.filtros-painel button.sec { border-color: var(--bd); color: var(--mu); }
+.filtros-painel button.on { background: var(--tx); border-color: var(--tx); color: var(--bg); }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi-card { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 18px; text-align: center; }
+.kpi-num { font-size: 28px; font-weight: bold; }
 </style></head><body>
 <header>
 <div class="brand-logo">
@@ -61,15 +69,38 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none}.lock{max-width:420px;margi
 
 <section id="v-painel" class="hide">
 <div class="card lock" id="lk-painel"><h2>Painel restrito</h2><input type="password" id="pw-painel" placeholder="Senha" autocomplete="off"><div style="margin-top:12px"><button class="btn" id="go-painel">Entrar</button></div><div id="er-painel"></div></div>
-<div class="card hide" id="in-painel"><h2>Solicitações registradas</h2>
-<div class="row"><input id="filtro" placeholder="Filtrar (SKU, linha, operador...)"><button class="btn sec" id="copiar">Copiar tabela</button><button class="btn" id="xl">Baixar Excel</button><span class="mu" id="cnt"></span></div>
-<div class="tw"><table id="tab"></table></div></div></section>
+<div id="in-painel" class="hide">
+
+<!-- NOVO: Dashboard de KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-num" style="color:var(--er)" id="kpi-pendentes">0</div>
+    <div class="mu">Pendentes</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-num" style="color:var(--ok)" id="kpi-concluidos">0</div>
+    <div class="mu">Concluídas (Hoje)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-num" style="color:#f39c12" id="kpi-excecoes">0</div>
+    <div class="mu">Exceções (Hoje)</div>
+  </div>
+</div>
+
+<div class="card"><h2>Solicitações registradas</h2>
+<div class="row filtros-painel">
+  <button class="btn on" id="btn-filt-todos" onclick="setFiltro('todos')">Todos</button>
+  <button class="btn sec" id="btn-filt-pendentes" onclick="setFiltro('pendentes')">Pendentes</button>
+  <button class="btn sec" id="btn-filt-concluidos" onclick="setFiltro('concluidos')">Concluídos</button>
+</div>
+<div class="row" style="margin-top:16px"><input id="filtro" placeholder="Pesquisar (SKU, linha, operador...)"><button class="btn sec" id="copiar">Copiar tabela</button><button class="btn" id="xl">Baixar Excel</button><span class="mu" id="cnt"></span></div>
+<div class="tw"><table id="tab"></table></div></div>
+</div></section>
 
 <section id="v-admin" class="hide">
 <div class="card lock" id="lk-admin"><h2>Área do administrador</h2><input type="password" id="pw-admin" placeholder="Senha" autocomplete="off"><div style="margin-top:12px"><button class="btn" id="go-admin">Entrar</button></div><div id="er-admin"></div></div>
 <div id="in-admin" class="hide">
 
-<!-- FORMULÁRIO DE EXCEÇÃO (BYPASS) -->
 <div class="card" style="border: 2px dashed var(--ac);">
   <h2>Solicitação de Exceção (Bypass de Regras)</h2>
   <p class="mu">Use este formulário para registrar solicitações urgentes (ex: pedidos da chefia). Ignora o bloqueio de estoque e de material inexistente, indo direto para o painel.</p>
@@ -137,6 +168,35 @@ const normSku=s=>String(s||'').trim().toUpperCase().replace(/^0+(?=.)/,'').repla
 const skuOk=s=>/^[A-Za-z0-9_\/]+$/.test(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+// ==========================================
+// NOVO: MEMÓRIA DE TERMINAL (LocalStorage)
+// ==========================================
+if(localStorage.getItem('mc_nome')) {
+  $('f-nome').value = localStorage.getItem('mc_nome');
+  $('fa-nome').value = localStorage.getItem('mc_nome');
+}
+if(localStorage.getItem('mc_user')) {
+  $('f-user').value = localStorage.getItem('mc_user');
+  $('fa-user').value = localStorage.getItem('mc_user');
+}
+
+const saveMem = (k, v) => localStorage.setItem(k, v);
+['f-nome', 'fa-nome'].forEach(id => {
+  $(id).addEventListener('input', e => {
+    saveMem('mc_nome', e.target.value);
+    if(id === 'f-nome') $('fa-nome').value = e.target.value;
+    else $('f-nome').value = e.target.value;
+  });
+});
+['f-user', 'fa-user'].forEach(id => {
+  $(id).addEventListener('input', e => {
+    saveMem('mc_user', e.target.value);
+    if(id === 'f-user') $('fa-user').value = e.target.value;
+    else $('f-user').value = e.target.value;
+  });
+});
+
+
 // Sincronização em Tempo Real com o Firebase
 db.ref('mc_stock').on('value', snap => { stock = snap.val() || {}; validate(); });
 db.ref('mc_master').on('value', snap => { master = snap.val() || {}; validate(); });
@@ -145,7 +205,37 @@ db.ref('mc_meta_master').on('value', snap => { metaMaster = snap.val() || null; 
 
 db.ref('mc_reqs').on('value', snap => { 
   const val = snap.val() || {}; 
+  const oldLen = reqs.length;
+  const oldPendentes = reqs.filter(r => !r.concluidoEm).length;
+
   reqs = Object.keys(val).map(k => ({ id: k, ...val[k] })).sort((a,b) => new Date(b.criadoEm) - new Date(a.criadoEm));
+  
+  // ==========================================
+  // NOVO: DASHBOARD E ALERTA VISUAL
+  // ==========================================
+  const hojeStr = new Date().toLocaleDateString('pt-BR');
+  let pendentes = 0, concluidosHoje = 0, excecoesHoje = 0;
+
+  reqs.forEach(r => {
+    if(!r.concluidoEm) pendentes++;
+    const dateCriado = new Date(r.criadoEm).toLocaleDateString('pt-BR');
+    const dateConcluido = r.concluidoEm ? new Date(r.concluidoEm).toLocaleDateString('pt-BR') : '';
+
+    if(r.concluidoEm && dateConcluido === hojeStr) concluidosHoje++;
+    if((dateCriado === hojeStr || dateConcluido === hojeStr) && String(r.obs).includes('[EXCEÇÃO ADM]')) excecoesHoje++;
+  });
+
+  $('kpi-pendentes').textContent = pendentes;
+  $('kpi-concluidos').textContent = concluidosHoje;
+  $('kpi-excecoes').textContent = excecoesHoje;
+
+  // Alerta Visual: Se a quantidade de pedidos pendentes aumentar
+  if(pendentes > oldPendentes && reqs.length > oldLen) {
+     let originalTitle = "Solicitação de materiais críticos - Atlas Schindler";
+     document.title = "🔴 NOVO PEDIDO!";
+     setTimeout(() => document.title = originalTitle, 5000);
+  }
+
   if(open.painel) renderPainel();
 });
 
@@ -191,7 +281,7 @@ setInterval(()=>{
   $('fa-dt').value = agora;
 },1000);
 
-// Envio normal (pelo operador com travas)
+// Envio normal
 $('enviar').onclick=async()=>{
   const res=$('f-res');res.innerHTML='';const v=id=>$(id).value.trim();
   const rec={nome:v('f-nome'),usuario:v('f-user'),linha:v('f-linha'),posicao:v('f-pos'),sku:v('f-sku').toUpperCase(),quantidade:Number(v('f-qtd')),circuito:v('f-circ'),obs:v('f-obs'),criadoEm:new Date().toISOString(),concluidoEm:null};
@@ -203,7 +293,7 @@ $('enviar').onclick=async()=>{
   ['f-sku','f-qtd','f-circ','f-obs'].forEach(i=>$(i).value='');validate();
 };
 
-// Envio Direto via Administrador (Bypass de regras para exceções)
+// Envio Direto via Administrador (Bypass)
 $('enviar-adm').onclick=async()=>{
   const res=$('fa-res');res.innerHTML='';const v=id=>$(id).value.trim();
   const rec={
@@ -226,13 +316,12 @@ $('enviar-adm').onclick=async()=>{
   try {
     await db.ref('mc_reqs').push(rec);
     res.innerHTML='<div class="okm">Exceção enviada com sucesso direto para o painel!</div>';
-    ['fa-sku','fa-qtd','fa-circ','fa-obs','fa-nome','fa-user','fa-linha','fa-pos'].forEach(i=>$(i).value='');
+    ['fa-sku','fa-qtd','fa-circ','fa-obs'].forEach(i=>$(i).value='');
   } catch(e) {
     res.innerHTML='<div class="err">Erro ao enviar exceção: '+esc(e.message)+'</div>';
   }
 };
 
-// Função para marcar como concluído no painel com o horário exato automático
 window.concluirReq = async (id) => {
   try {
     await db.ref('mc_reqs/' + id).update({
@@ -241,6 +330,31 @@ window.concluirReq = async (id) => {
   } catch(e) {
     alert('Erro ao concluir solicitação: ' + e.message);
   }
+};
+
+// ==========================================
+// NOVO: IMPRESSÃO DE VALE-MATERIAL
+// ==========================================
+window.imprimirVale = (id) => {
+  const r = reqs.find(x => x.id === id);
+  if(!r) return;
+  const win = window.open('', '', 'width=450,height=500');
+  win.document.write(`
+    <html><head><title>Vale Material - ${r.sku}</title>
+    <style>body{font-family:sans-serif; padding:20px; color:#000} h2{border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px} .l{margin-bottom:12px; font-size:15px} strong{display:inline-block; width:110px} .hl{font-size:22px; font-weight:bold}</style>
+    </head><body>
+    <h2>VALE MATERIAL - ATLAS SCHINDLER</h2>
+    <div class="l"><strong>Data/Hora:</strong> ${fmt(r.criadoEm)}</div>
+    <div class="l"><strong>Operador:</strong> ${esc(r.nome)} (${esc(r.usuario)})</div>
+    <div class="l"><strong>Posição/Linha:</strong> ${esc(r.posicao)} / ${esc(r.linha)}</div>
+    <div class="l"><strong>SKU:</strong> <span class="hl">${esc(r.sku)}</span></div>
+    <div class="l"><strong>Quantidade:</strong> <span class="hl">${r.quantidade}</span></div>
+    ${r.circuito ? `<div class="l"><strong>Circuito:</strong> ${esc(r.circuito)}</div>` : ''}
+    <div class="l"><strong>Observação:</strong> ${esc(r.obs)}</div>
+    <div style="margin-top:60px; border-top:1px dashed #000; padding-top:15px; text-align:center">Assinatura Recebedor (Almoxarifado)</div>
+    <script>window.onload=()=>{window.print(); setTimeout(()=>window.close(), 500);};<\/script>
+    </body></html>
+  `);
 };
 
 const COLS=[
@@ -256,7 +370,27 @@ const COLS=[
   ['Concluído em', r=>fmt(r.concluidoEm)]
 ];
 
-function filtered(){const q=$('filtro').value.toLowerCase();return reqs.filter(r=>!q||COLS.some(c=>String(c[1](r)??'').toLowerCase().includes(q)))}
+// ==========================================
+// NOVO: FILTROS RÁPIDOS
+// ==========================================
+let statusFilter = 'todos';
+window.setFiltro = (f) => {
+  statusFilter = f;
+  ['todos','pendentes','concluidos'].forEach(id => {
+    $('btn-filt-'+id).classList.toggle('on', id === f);
+    $('btn-filt-'+id).classList.toggle('sec', id !== f);
+  });
+  renderPainel();
+};
+
+function filtered(){
+  const q=$('filtro').value.toLowerCase();
+  let list = reqs;
+  if(statusFilter === 'pendentes') list = reqs.filter(r => !r.concluidoEm);
+  if(statusFilter === 'concluidos') list = reqs.filter(r => r.concluidoEm);
+  
+  return list.filter(r=>!q||COLS.some(c=>String(c[1](r)??'').toLowerCase().includes(q)));
+}
 
 function renderPainel(){
   const rows = filtered();
@@ -264,7 +398,7 @@ function renderPainel(){
   
   let html = '<thead><tr>';
   COLS.forEach(c => html += '<th>' + c[0] + '</th>');
-  html += '<th>Ação</th></tr></thead><tbody>';
+  html += '<th>Ações</th></tr></thead><tbody>';
   
   rows.forEach(r => {
     html += '<tr>';
@@ -273,10 +407,11 @@ function renderPainel(){
     });
     html += '<td>';
     if(r.concluidoEm){
-      html += '<span style="color:var(--ok);font-weight:600">✓ Concluído</span>';
+      html += '<span style="color:var(--ok);font-weight:600;font-size:13px;display:inline-block;margin-right:8px">✓ Concluído</span>';
     } else {
-      html += `<button class="btn" style="padding:4px 10px;font-size:12px" onclick="concluirReq('${r.id}')">Concluir</button>`;
+      html += `<button class="btn" style="padding:4px 10px;font-size:12px;margin-right:8px" onclick="concluirReq('${r.id}')">Concluir</button>`;
     }
+    html += `<button class="btn sec" style="padding:4px 10px;font-size:12px" onclick="imprimirVale('${r.id}')">🖨️ Imprimir</button>`;
     html += '</td></tr>';
   });
   html += '</tbody>';
@@ -285,7 +420,8 @@ function renderPainel(){
 
 $('filtro').oninput=renderPainel;
 
-$('copiar').onclick=async()=>{const t=[COLS.map(c=>c[0]).join('\t'),...filtered().map(r=>COLS.map(c=>String(c[1](r)??'').replace(/\s+/g,' ')).join('\t'))].join('\n');try{await navigator.clipboard.writeText(t);$('cnt').textContent='Copiado!'}catch(e){$('cnt').textContent='Não foi possível copiar'}};
+$('copiar').onclick=async()=>{const t=[COLS.map(c=>c[0]).join('	'),...filtered().map(r=>COLS.map(c=>String(c[1](r)??'').replace(/\s+/g,' ')).join('	'))].join('
+');try{await navigator.clipboard.writeText(t);$('cnt').textContent='Copiado!'}catch(e){$('cnt').textContent='Não foi possível copiar'}};
 
 $('xl').onclick=async()=>{
   const rows=filtered(),wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Solicitações');
@@ -300,7 +436,6 @@ $('xl').onclick=async()=>{
   a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download='solicitacoes_materiais_criticos.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 };
 
-// Botão para limpar todo o histórico de solicitações
 $('limpar-hist').onclick=async()=>{
   if(confirm('Tem certeza que deseja apagar todo o histórico de solicitações? Esta ação não pode ser desfeita.')){
     try{
