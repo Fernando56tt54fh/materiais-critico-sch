@@ -56,7 +56,6 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none!important}.lock{max-width:4
   th, td { border: 1px solid #ccc; padding: 6px; color: #000; }
   th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
   .tw { overflow: visible !important; }
-  /* Adiciona um título visível apenas na impressão */
   #in-painel::before { content: 'Relatório: Solicitações de Materiais Críticos - Atlas Schindler'; display: block; font-size: 18px; font-weight: bold; margin-bottom: 20px; text-align: center; }
   h2 { display: none; }
 }
@@ -64,7 +63,7 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none!important}.lock{max-width:4
 /* TELA DE LOGIN GERAL DO SITE */
 #v-global-login { position:fixed; top:0; left:0; width:100%; height:100%; background:#1b1f24; z-index:9999; display:flex; align-items:center; justify-content:center; }
 .login-box { background:#fff; padding:40px; border-radius:12px; width:100%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
-.login-box img { max-width:200px; margin-bottom:10px; }
+.login-box img { max-width:220px; margin-bottom:15px; display:block; margin-left:auto; margin-right:auto; }
 .login-box h2 { font-size:18px; margin-bottom:24px; color:#1b1f24; font-weight:700; }
 .login-box input { margin-bottom:16px; font-size:15px; border: 1px solid #d9dde3; background:#f4f5f7; color:#1b1f24; }
 .login-box .btn { width:100%; font-size:16px; padding:14px; font-weight:bold; }
@@ -76,7 +75,7 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none!important}.lock{max-width:4
 <div id="v-global-login">
   <div class="login-box">
     <!-- LOGO COLORIDA NO LOGIN -->
-    <img src="1560583261888.jpg" alt="Atlas Schindler">
+    <img src="logo-colorida.jpg" alt="Atlas Schindler">
     <h2>Solicitações de Materiais Críticos</h2>
     <input type="text" id="gl-user" placeholder="Login" autocomplete="off">
     <input type="password" id="gl-pass" placeholder="Senha" autocomplete="off">
@@ -96,7 +95,7 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none!important}.lock{max-width:4
       <button id="t-admin">Administrador</button>
       <button class="btn sec" id="btn-logout" style="border-color:var(--er);color:var(--er);padding:8px 12px;margin-left:12px">Sair</button>
       <!-- LOGO BRANCA NO CANTO SUPERIOR DIREITO -->
-      <img src="Logo_Atlas_branca (1).png" alt="Atlas Schindler" style="height:30px; margin-left:16px;">
+      <img src="logo-branca.png" alt="Atlas Schindler" style="height:35px; margin-left:16px;">
     </nav>
     </header>
 
@@ -290,20 +289,39 @@ async function syncData() {
 
 $('enviar').onclick = async () => {
   const rec={nome:$('f-nome').value.trim(), usuario:$('f-user').value.trim(), linha:$('f-linha').value.trim(), posicao:$('f-pos').value.trim(), sku:$('f-sku').value.trim().toUpperCase(), quantidade:Number($('f-qtd').value), circuito:$('f-circ').value.trim(), obs:$('f-obs').value.trim(), criadoEm: new Date().toISOString()};
-  if(!rec.nome||!rec.usuario||!rec.linha||!rec.posicao||!(rec.quantidade>0)){ $('f-res').innerHTML='<div class="err">Preencha os campos.</div>';return; }
+  
+  if(!rec.nome||!rec.usuario||!rec.linha||!rec.posicao||!(rec.quantidade>0)){ $('f-res').innerHTML='<div class="err">Preencha os campos obrigatórios.</div>';return; }
+  
   $('enviar').disabled = true;
-  
   await db.from('solicitacoes').insert([rec]);
+  syncData(); 
+  $('f-res').innerHTML='<div class="okm">Registrado no Banco SQL Corporativo!</div>';
   
-  syncData(); $('f-res').innerHTML='<div class="okm">Registrado no Banco SQL Corporativo!</div>';
-  ['f-sku','f-qtd','f-circ','f-obs'].forEach(i=>$(i).value=''); validate();
+  // Limpa apenas os dados do material/linha (Mantém Nome e Usuário salvos para o operador)
+  ['f-linha','f-pos','f-sku','f-qtd','f-circ','f-obs'].forEach(i=>$(i).value=''); 
+  validate();
+  
+  setTimeout(() => { $('f-res').innerHTML=''; }, 4000);
 };
 
 $('enviar-adm').onclick=async()=>{
   const rec={nome:$('fa-nome').value.trim(), usuario:$('fa-user').value.trim(), linha:$('fa-linha').value.trim(), posicao:$('fa-pos').value.trim(), sku:$('fa-sku').value.trim().toUpperCase(), quantidade:Number($('fa-qtd').value), circuito:$('fa-circ').value.trim(), obs: '[EXCEÇÃO ADM] ' + $('fa-obs').value.trim(), criadoEm: new Date().toISOString()};
+  
+  if(!rec.nome||!rec.usuario||!rec.linha||!rec.posicao||!rec.sku||!(rec.quantidade>0)){ 
+    $('fa-res').innerHTML='<div class="err">Erro: Preencha todos os campos obrigatórios.</div>';
+    return; 
+  }
+  
+  $('enviar-adm').disabled = true;
   await db.from('solicitacoes').insert([rec]);
-  syncData(); $('fa-res').innerHTML='<div class="okm">Prioridade enviada.</div>';
-  ['fa-sku','fa-qtd','fa-circ','fa-obs','fa-nome','fa-user','fa-linha','fa-pos'].forEach(i=>$(i).value='');
+  syncData(); 
+  $('fa-res').innerHTML='<div class="okm">Prioridade enviada com sucesso!</div>';
+  
+  // Limpa os dados de material após enviar a prioridade
+  ['fa-linha','fa-pos','fa-sku','fa-qtd','fa-circ','fa-obs'].forEach(i=>$(i).value='');
+  $('enviar-adm').disabled = false;
+  
+  setTimeout(() => { $('fa-res').innerHTML=''; }, 4000);
 };
 
 window.concluirReq = async (id) => { 
@@ -312,23 +330,25 @@ window.concluirReq = async (id) => {
 };
 
 // ==========================================
-// LÓGICA DE LIMPAR HISTÓRICO (ADMIN)
+// AÇÕES DO PAINEL E LIMPEZA
 // ==========================================
+window.deletarReq = async (id) => {
+  if(confirm("Tem certeza que deseja apagar esta solicitação específica?")) {
+    await db.from('solicitacoes').delete().eq('id', id);
+    syncData();
+  }
+};
+
 $('btn-limpar').onclick = async () => {
   if(!confirm("TEM CERTEZA ABSOLUTA? Isso apagará TODO o histórico de solicitações da linha permanentemente!")) return;
   $('btn-limpar').disabled = true; $('btn-limpar').textContent = "Apagando...";
-  
-  // Apaga todos os registros em que o ID não seja nulo (ou seja, todos)
   await db.from('solicitacoes').delete().not('id', 'is', null);
-  
   $('btn-limpar').disabled = false; $('btn-limpar').textContent = "Limpar Histórico Completo";
   alert("Histórico apagado com sucesso do servidor!");
   syncData();
 };
 
-// IMPRESSÃO CHIQUE
 $('btn-print').onclick = () => window.print();
-
 
 // ==========================================
 // 4. SENHAS ANTIGAS (Abas protegidas)
@@ -375,7 +395,12 @@ function renderPainel(){
     html += `<tr ${cssRow}>`;
     COLS.forEach((c, idx) => { let val = esc(c[1](r)); if(idx === 5 && isAdm && !r.concluidoEm) val = `<b style="color:var(--er);font-size:12px">⚠️ PRIORIDADE:</b><br>${val}`; html += '<td>' + val + '</td>'; });
     html += `<td>${r.concluidoEm ? '<span style="color:var(--ok);font-weight:600">✓ Concluído</span>' : '<span style="color:var(--ac);font-weight:600">Pendente</span>'}</td>`;
-    html += `<td style="display:flex;gap:6px;align-items:center">${!r.concluidoEm ? `<button class="btn" style="padding:4px 10px;font-size:12px" onclick="concluirReq('${r.id}')">Concluir</button> ` : ''}</td></tr>`;
+    
+    // NOVA COLUNA DE AÇÕES COM BOTÃO DELETAR
+    html += `<td style="display:flex;gap:6px;align-items:center">`;
+    if (!r.concluidoEm) { html += `<button class="btn" style="padding:4px 10px;font-size:12px" onclick="concluirReq('${r.id}')">Concluir</button>`; }
+    html += `<button class="btn sec" style="padding:4px 8px;font-size:12px;color:var(--er);border-color:var(--er)" onclick="deletarReq('${r.id}')" title="Excluir Linha">🗑️</button>`;
+    html += `</td></tr>`;
   });
   $('tab').innerHTML = html + '</tbody>';
 }
