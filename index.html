@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Solicitação de materiais críticos - Atlas Schindler</title>
+<!-- ÍCONE DA ABA (FAVICON) -->
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+
 <!-- Scripts Necessários -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -16,7 +19,7 @@
 header{background:#1b1f24;padding:12px 32px;display:flex;align-items:center;gap:24px;border-bottom:3px solid #d6001c;flex-wrap:wrap}
 .brand-logo{display:flex;align-items:center;height:42px;color:#fff;font-size:22px;font-weight:900}
 header h1{font-size:18px;margin:0;flex:1;color:#fff;border-left:1px solid #4a525c;padding-left:20px}
-nav{display:flex;gap:6px}nav button{background:none;border:1px solid #4a525c;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font:inherit}
+nav{display:flex;gap:6px;align-items:center}nav button{background:none;border:1px solid #4a525c;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font:inherit}
 nav button.on{background:#d6001c;border-color:#d6001c}
 main{max-width:1180px;margin:28px auto;padding:0 32px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:24px;margin-bottom:20px;transition: background 0.3s;}
@@ -43,21 +46,38 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none!important}.lock{max-width:4
 .bell-badge { position:absolute; top:-6px; right:-6px; background:#ff4d63; color:#fff; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; border: 2px solid #1b1f24; }
 .row-urgente { background-color: var(--erbg); border-left: 4px solid var(--ac); }
 
+/* LAYOUT DE IMPRESSÃO (Limpo e Profissional) */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  header, nav, #v-form, #v-admin, .kpi-grid, .row:not(.print-only), .btn, #status { display: none !important; }
+  main { padding: 0 !important; margin: 0 !important; }
+  .card { border: none !important; padding: 0 !important; box-shadow: none !important; }
+  table { border: 1px solid #ccc; font-size: 11px; }
+  th, td { border: 1px solid #ccc; padding: 6px; color: #000; }
+  th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
+  .tw { overflow: visible !important; }
+  /* Adiciona um título visível apenas na impressão */
+  #in-painel::before { content: 'Relatório: Solicitações de Materiais Críticos - Atlas Schindler'; display: block; font-size: 18px; font-weight: bold; margin-bottom: 20px; text-align: center; }
+  h2 { display: none; }
+}
+
 /* TELA DE LOGIN GERAL DO SITE */
 #v-global-login { position:fixed; top:0; left:0; width:100%; height:100%; background:#1b1f24; z-index:9999; display:flex; align-items:center; justify-content:center; }
-.login-box { background:var(--card); padding:40px; border-radius:12px; width:100%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
-.login-box h2 { font-size:22px; margin-bottom:24px; color:var(--tx); }
-.login-box input { margin-bottom:16px; font-size:16px; }
-.login-box .btn { width:100%; font-size:16px; padding:14px; }
+.login-box { background:#fff; padding:40px; border-radius:12px; width:100%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+.login-box img { max-width:200px; margin-bottom:10px; }
+.login-box h2 { font-size:18px; margin-bottom:24px; color:#1b1f24; font-weight:700; }
+.login-box input { margin-bottom:16px; font-size:15px; border: 1px solid #d9dde3; background:#f4f5f7; color:#1b1f24; }
+.login-box .btn { width:100%; font-size:16px; padding:14px; font-weight:bold; }
 </style>
 </head>
 <body>
 
-<!-- LOGIN GLOBAL (Senha e validação ocorrem no Supabase) -->
+<!-- LOGIN GLOBAL -->
 <div id="v-global-login">
   <div class="login-box">
-    <div style="color:#d6001c; font-size:32px; font-weight:900; margin-bottom:10px;">ATLAS SCHINDLER</div>
-    <h2>Acesso ao Sistema</h2>
+    <!-- LOGO COLORIDA NO LOGIN -->
+    <img src="1560583261888.jpg" alt="Atlas Schindler">
+    <h2>Solicitações de Materiais Críticos</h2>
     <input type="text" id="gl-user" placeholder="Login" autocomplete="off">
     <input type="password" id="gl-pass" placeholder="Senha" autocomplete="off">
     <button class="btn" id="btn-global-login">Entrar</button>
@@ -75,6 +95,8 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none!important}.lock{max-width:4
       <button id="t-painel" style="position:relative">Painel <span id="bell" class="bell-badge hide">0</span></button>
       <button id="t-admin">Administrador</button>
       <button class="btn sec" id="btn-logout" style="border-color:var(--er);color:var(--er);padding:8px 12px;margin-left:12px">Sair</button>
+      <!-- LOGO BRANCA NO CANTO SUPERIOR DIREITO -->
+      <img src="Logo_Atlas_branca (1).png" alt="Atlas Schindler" style="height:30px; margin-left:16px;">
     </nav>
     </header>
 
@@ -122,6 +144,7 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none!important}.lock{max-width:4
       <div class="row">
         <input type="date" id="filtro-dt">
         <input id="filtro" placeholder="Filtrar dados...">
+        <button class="btn sec" id="btn-print">🖨️ Imprimir</button>
         <button class="btn sec" id="copiar">Copiar tabela</button>
         <button class="btn" id="xl">Baixar Excel</button>
         <span class="mu" id="cnt"></span>
@@ -162,6 +185,12 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none!important}.lock{max-width:4
         <h2>Estoque Atual (LX03 - WAL)</h2>
         <div class="row"><input type="file" id="arq" accept=".xlsx,.xls,.csv" style="max-width:420px"><button class="btn" id="subir" disabled>Atualizar Estoque</button></div><div id="up-res"></div>
       </div>
+      <!-- BOTÃO LIMPAR HISTÓRICO -->
+      <div class="card" style="border: 1px solid var(--er); margin-top:20px;">
+        <h2 style="color:var(--er)">Apagar Dados do Sistema</h2>
+        <p class="mu">Isso excluirá permanentemente todo o histórico de solicitações da Nuvem e da tabela.</p>
+        <button class="btn" id="btn-limpar" style="background:var(--er)">Limpar Histórico Completo</button>
+      </div>
     </div>
     </section>
     </main>
@@ -170,11 +199,14 @@ h2{margin:0 0 14px;font-size:18px}.hide{display:none!important}.lock{max-width:4
 <script>
 // ==========================================
 // 1. DADOS DE CONEXÃO DO SUPABASE
-// Cole aqui as duas chaves que você pegou no Passo 4
 // ==========================================
 const supabaseUrl = 'https://nzpzpedbifelsdabgahn.supabase.co';
 const supabaseKey = 'sb_publishable_C661YiThoONYBdopGd9tuA_gPNimoMP';
-const db = supabase.createClient(supabaseUrl, supabaseKey);
+
+// A MÁGICA DO LOGIN AQUI: "window.sessionStorage" obriga a pessoa a logar toda vez que fechar a janela
+const db = supabase.createClient(supabaseUrl, supabaseKey, {
+  auth: { storage: window.sessionStorage }
+});
 
 const $ = id => document.getElementById(id);
 let stock={}, master={}, meta=null, metaMaster=null, reqs=[], open={painel:false,admin:false}, currentFilter='all';
@@ -184,94 +216,87 @@ let initialLoad = true, knownReqs = new Set(), unreadCount = 0;
 // 2. SISTEMA DE LOGIN GLOBAL BLINDADO
 // ==========================================
 window.addEventListener('DOMContentLoaded', async () => {
-    const { data: { session } } = await db.auth.getSession();
-    if(session) { startApp(); } 
-    else { $('v-global-login').classList.remove('hide'); }
+  const { data: { session } } = await db.auth.getSession();
+  if(session) { startApp(); } 
+  else { $('v-global-login').classList.remove('hide'); }
 });
 
 $('btn-global-login').onclick = async () => {
-    const u = $('gl-user').value.trim();
-    const p = $('gl-pass').value.trim();
-    $('btn-global-login').disabled = true;
+  const u = $('gl-user').value.trim();
+  const p = $('gl-pass').value.trim();
+  $('btn-global-login').disabled = true;
 
-    // Se a pessoa não digitar o usuário correto, o sistema nem tenta enviar para o Supabase
-    if (u !== 'Schindler_Atlas2026') {
-        $('gl-err').innerHTML = '<div class="err">Login inválido.</div>';
-        $('btn-global-login').disabled = false;
-        return;
-    }
-
-    // Ele mapeia o usuário do campo para o e-mail de acesso oculto que criamos no Supabase
-    // A senha enviada para o banco testar é a que a pessoa digitou
-    const { data, error } = await db.auth.signInWithPassword({ email: 'sistema@atlas2026.com', password: p });
-    
-    if (error) { 
-        $('gl-err').innerHTML = '<div class="err">Senha incorreta.</div>'; 
-    } else {
-        startApp();
-    }
+  if (u !== 'Schindler_Atlas2026') {
+    $('gl-err').innerHTML = '<div class="err">Login inválido.</div>';
     $('btn-global-login').disabled = false;
+    return;
+  }
+
+  const { data, error } = await db.auth.signInWithPassword({ email: 'sistema@atlas2026.com', password: p });
+  
+  if (error) { 
+    $('gl-err').innerHTML = '<div class="err">Senha incorreta.</div>'; 
+  } else {
+    startApp();
+  }
+  $('btn-global-login').disabled = false;
 };
 
 $('btn-logout').onclick = async () => { await db.auth.signOut(); location.reload(); };
 
 function startApp() {
-    $('v-global-login').classList.add('hide'); $('app-content').classList.remove('hide');
-    const savedTheme = localStorage.getItem('sch_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    $('t-theme').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-    if(localStorage.getItem('sch_op_nome')) $('f-nome').value = localStorage.getItem('sch_op_nome');
-    if(localStorage.getItem('sch_op_user')) $('f-user').value = localStorage.getItem('sch_op_user');
+  $('v-global-login').classList.add('hide'); $('app-content').classList.remove('hide');
+  const savedTheme = localStorage.getItem('sch_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  $('t-theme').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+  if(localStorage.getItem('sch_op_nome')) $('f-nome').value = localStorage.getItem('sch_op_nome');
+  if(localStorage.getItem('sch_op_user')) $('f-user').value = localStorage.getItem('sch_op_user');
 
-    syncData(); setInterval(syncData, 3000);
+  syncData(); setInterval(syncData, 3000);
 }
 
 // ==========================================
 // 3. COMUNICAÇÃO COM O BANCO DE DADOS SQL
 // ==========================================
 async function syncData() {
-    try {
-        // Busca as solicitações no SQL
-        const { data: reqsData } = await db.from('solicitacoes').select('*').order('criadoEm', { ascending: false });
-        
-        // Busca os estoques e master data
-        const { data: appData } = await db.from('app_data').select('*');
-        const parsed = {};
-        if (appData) { appData.forEach(item => parsed[item.chave] = item.valor); }
-        
-        stock = parsed.stock || {}; master = parsed.master || {}; 
-        meta = parsed.meta; metaMaster = parsed.metaMaster;
+  try {
+    const { data: reqsData } = await db.from('solicitacoes').select('*').order('criadoEm', { ascending: false });
+    const { data: appData } = await db.from('app_data').select('*');
+    const parsed = {};
+    if (appData) { appData.forEach(item => parsed[item.chave] = item.valor); }
+    
+    stock = parsed.stock || {}; master = parsed.master || {}; 
+    meta = parsed.meta; metaMaster = parsed.metaMaster;
 
-        const newReqs = (reqsData || []).sort((a,b) => {
-            let aAdm = a.obs && a.obs.includes('[EXCEÇÃO ADM]') && !a.concluidoEm;
-            let bAdm = b.obs && b.obs.includes('[EXCEÇÃO ADM]') && !b.concluidoEm;
-            if(aAdm && !bAdm) return -1;
-            if(!aAdm && bAdm) return 1;
-            return new Date(b.criadoEm) - new Date(a.criadoEm);
-        });
-        
-        if (!initialLoad) {
-            let newArrivals = newReqs.filter(r => !knownReqs.has(r.id) && !r.concluidoEm);
-            if (newArrivals.length > 0 && !open.painel) {
-                unreadCount += newArrivals.length; $('bell').textContent = unreadCount; $('bell').classList.remove('hide');
-            }
-        }
-        reqs = newReqs; knownReqs = new Set(reqs.map(r => r.id)); initialLoad = false;
-        
-        renderStatus(); if(open.painel) renderPainel();
-    } catch(e) { $('status').innerHTML = '<span style="color:var(--er)">⚠️ Falha na conexão com o Supabase.</span>'; }
+    const newReqs = (reqsData || []).sort((a,b) => {
+      let aAdm = a.obs && a.obs.includes('[EXCEÇÃO ADM]') && !a.concluidoEm;
+      let bAdm = b.obs && b.obs.includes('[EXCEÇÃO ADM]') && !b.concluidoEm;
+      if(aAdm && !bAdm) return -1;
+      if(!aAdm && bAdm) return 1;
+      return new Date(b.criadoEm) - new Date(a.criadoEm);
+    });
+    
+    if (!initialLoad) {
+      let newArrivals = newReqs.filter(r => !knownReqs.has(r.id) && !r.concluidoEm);
+      if (newArrivals.length > 0 && !open.painel) {
+        unreadCount += newArrivals.length; $('bell').textContent = unreadCount; $('bell').classList.remove('hide');
+      }
+    }
+    reqs = newReqs; knownReqs = new Set(reqs.map(r => r.id)); initialLoad = false;
+    
+    renderStatus(); if(open.painel) renderPainel();
+  } catch(e) { $('status').innerHTML = '<span style="color:var(--er)">⚠️ Falha na conexão com o Supabase.</span>'; }
 }
 
 $('enviar').onclick = async () => {
-    const rec={nome:$('f-nome').value.trim(), usuario:$('f-user').value.trim(), linha:$('f-linha').value.trim(), posicao:$('f-pos').value.trim(), sku:$('f-sku').value.trim().toUpperCase(), quantidade:Number($('f-qtd').value), circuito:$('f-circ').value.trim(), obs:$('f-obs').value.trim(), criadoEm: new Date().toISOString()};
-    if(!rec.nome||!rec.usuario||!rec.linha||!rec.posicao||!(rec.quantidade>0)){ $('f-res').innerHTML='<div class="err">Preencha os campos.</div>';return; }
-    $('enviar').disabled = true;
-    
-    // Insere no SQL
-    await db.from('solicitacoes').insert([rec]);
-    
-    syncData(); $('f-res').innerHTML='<div class="okm">Registrado no Banco SQL Corporativo!</div>';
-    ['f-sku','f-qtd','f-circ','f-obs'].forEach(i=>$(i).value=''); validate();
+  const rec={nome:$('f-nome').value.trim(), usuario:$('f-user').value.trim(), linha:$('f-linha').value.trim(), posicao:$('f-pos').value.trim(), sku:$('f-sku').value.trim().toUpperCase(), quantidade:Number($('f-qtd').value), circuito:$('f-circ').value.trim(), obs:$('f-obs').value.trim(), criadoEm: new Date().toISOString()};
+  if(!rec.nome||!rec.usuario||!rec.linha||!rec.posicao||!(rec.quantidade>0)){ $('f-res').innerHTML='<div class="err">Preencha os campos.</div>';return; }
+  $('enviar').disabled = true;
+  
+  await db.from('solicitacoes').insert([rec]);
+  
+  syncData(); $('f-res').innerHTML='<div class="okm">Registrado no Banco SQL Corporativo!</div>';
+  ['f-sku','f-qtd','f-circ','f-obs'].forEach(i=>$(i).value=''); validate();
 };
 
 $('enviar-adm').onclick=async()=>{
@@ -282,9 +307,28 @@ $('enviar-adm').onclick=async()=>{
 };
 
 window.concluirReq = async (id) => { 
-    await db.from('solicitacoes').update({ concluidoEm: new Date().toISOString() }).eq('id', id);
-    syncData(); 
+  await db.from('solicitacoes').update({ concluidoEm: new Date().toISOString() }).eq('id', id);
+  syncData(); 
 };
+
+// ==========================================
+// LÓGICA DE LIMPAR HISTÓRICO (ADMIN)
+// ==========================================
+$('btn-limpar').onclick = async () => {
+  if(!confirm("TEM CERTEZA ABSOLUTA? Isso apagará TODO o histórico de solicitações da linha permanentemente!")) return;
+  $('btn-limpar').disabled = true; $('btn-limpar').textContent = "Apagando...";
+  
+  // Apaga todos os registros em que o ID não seja nulo (ou seja, todos)
+  await db.from('solicitacoes').delete().not('id', 'is', null);
+  
+  $('btn-limpar').disabled = false; $('btn-limpar').textContent = "Limpar Histórico Completo";
+  alert("Histórico apagado com sucesso do servidor!");
+  syncData();
+};
+
+// IMPRESSÃO CHIQUE
+$('btn-print').onclick = () => window.print();
+
 
 // ==========================================
 // 4. SENHAS ANTIGAS (Abas protegidas)
@@ -337,12 +381,12 @@ function renderPainel(){
 }
 
 const processFile = async (e, btnId, targetObjName) => {
-    const f=e.target.files[0]; $(btnId).disabled=true; if(!f) return null;
-    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}), rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
-    const hi=rows.findIndex(r=>r.some(c=>/(material|sku)/i.test(c)));
-    const h=rows[hi].map(c=>String(c).toLowerCase()), ci=h.findIndex(c=>/(material|sku)/.test(c)), qi=h.findIndex(c=>/(estoque|qtd)/.test(c));
-    const m={}; rows.slice(hi+1).forEach(r=>{ const k=normSku(r[ci]); if(k){ if(targetObjName==='stock') m[k]=(m[k]||0)+(parseFloat(String(r[qi]).replace(/\./g,'').replace(',','.'))||0); else m[k]=true; }});
-    $(btnId).disabled=false; return m;
+  const f=e.target.files[0]; $(btnId).disabled=true; if(!f) return null;
+  const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}), rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+  const hi=rows.findIndex(r=>r.some(c=>/(material|sku)/i.test(c)));
+  const h=rows[hi].map(c=>String(c).toLowerCase()), ci=h.findIndex(c=>/(material|sku)/.test(c)), qi=h.findIndex(c=>/(estoque|qtd)/.test(c));
+  const m={}; rows.slice(hi+1).forEach(r=>{ const k=normSku(r[ci]); if(k){ if(targetObjName==='stock') m[k]=(m[k]||0)+(parseFloat(String(r[qi]).replace(/\./g,'').replace(',','.'))||0); else m[k]=true; }});
+  $(btnId).disabled=false; return m;
 };
 let parsedMaster=null; $('arq-master').onchange = async e => { parsedMaster = await processFile(e, 'subir-master', 'master'); $('up-res-master').innerHTML=`<div class="okm">${Object.keys(parsedMaster).length} SKUs identificados.</div>`; };
 $('subir-master').onclick = async () => { await db.from('app_data').upsert({chave: 'master', valor: parsedMaster}); await db.from('app_data').upsert({chave: 'metaMaster', valor: {count: Object.keys(parsedMaster).length}}); $('up-res-master').innerHTML='<div class="okm">Master Atualizado.</div>'; syncData(); };
